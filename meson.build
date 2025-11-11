@@ -5,6 +5,7 @@ subdir('imgui')
 src = files('src/main.cpp')
 
 aws_c_common_dep = dependency('aws-c-common')
+aws_crt_cpp_dep = dependency('aws-crt-cpp')
 
 executable('gui', src,
     link_args: ['-lGL'],
