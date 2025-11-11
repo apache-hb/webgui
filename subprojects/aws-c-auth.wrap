@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-c-auth-0.9.1
+source_url = https://github.com/awslabs/aws-c-auth/archive/refs/tags/v0.9.1.tar.gz
+source_filename = aws-c-auth-0.9.1.tar.gz
+source_hash = adae1e725d9725682366080b8bf8e49481650c436b846ceeb5efe955d5e03273
+
+patch_directory = aws-c-auth
+
+[provide]
+dependency_names = aws-c-auth

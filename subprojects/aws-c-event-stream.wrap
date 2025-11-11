@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-c-event-stream-0.5.7
+source_url = https://github.com/awslabs/aws-c-event-stream/archive/refs/tags/v0.5.7.tar.gz
+source_filename = aws-c-event-stream-0.5.7.tar.gz
+source_hash = 5d92abed2ed89cc1efaba3963e888d9df527296f1dbfe21c569f84ea731aa3c2
+
+patch_directory = aws-c-event-stream
+
+[provide]
+dependency_names = aws-c-event-stream

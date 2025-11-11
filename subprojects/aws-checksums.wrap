@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-checksums-0.2.7
+source_url = https://github.com/awslabs/aws-checksums/archive/refs/tags/v0.2.7.tar.gz
+source_filename = aws-checksums-0.2.7.tar.gz
+source_hash = 178e8398d98111f29150f7813a70c20ad97ab30be0de02525440355fe84ccb1d
+
+patch_directory = aws-checksums
+
+[provide]
+dependency_names = aws-checksums

@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-c-io-0.23.3
+source_url = https://github.com/awslabs/aws-c-io/archive/refs/tags/v0.23.3.tar.gz
+source_filename = aws-c-io-0.23.3.tar.gz
+source_hash = cdcb31b694fc28ba96237ee33a742679daf2dcabfd41464f8a68fbd913907085
+
+patch_directory = aws-c-io
+
+[provide]
+dependency_names = aws-c-io

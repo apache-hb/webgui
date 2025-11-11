@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-c-s3-0.10.1
+source_url = https://github.com/awslabs/aws-c-s3/archive/refs/tags/v0.10.1.tar.gz
+source_filename = aws-c-s3-0.10.1.tar.gz
+source_hash = cc656740e8e566b5c0233b1e96c8a91fc10d31872b3fcea6831c57902a746386
+
+patch_directory = aws-c-s3
+
+[provide]
+dependency_names = aws-c-s3

@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-c-mqtt-0.13.3
+source_url = https://github.com/awslabs/aws-c-mqtt/archive/refs/tags/v0.13.3.tar.gz
+source_filename = aws-c-mqtt-0.13.3.tar.gz
+source_hash = 1dfc11d6b3dc1a6d408df64073e8238739b4c50374078d36d3f2d30491d15527
+
+patch_directory = aws-c-mqtt
+
+[provide]
+dependency_names = aws-c-mqtt
