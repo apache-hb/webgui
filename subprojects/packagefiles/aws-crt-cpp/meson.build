@@ -2,6 +2,7 @@ project('aws-crt-cpp',
 'cpp', version: '0.35.2', license: 'Apache-2.0', meson_version: '>=0.63.0')
 
 pkg = import('pkgconfig')
+byo_crypto = get_option('byo_crypto')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_io_dep = dependency('aws-c-io')
@@ -73,9 +74,16 @@ src = files(
     'source/crypto/SecureRandom.cpp'
 )
 
+cpp_args = []
+
+if byo_crypto.allowed()
+    cpp_args += [ '-DBYO_CRYPTO=1' ]
+endif
+
 libaws_cpp_crt = library(
     'aws-crt-cpp',
     src,
+    cpp_args: cpp_args,
     include_directories: inc,
     dependencies: deps,
     install: true,

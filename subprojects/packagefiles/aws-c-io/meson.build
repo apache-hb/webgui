@@ -1,5 +1,6 @@
-project('aws-c-io',
-'c', version: '0.23.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-c-io', 'c', version: '0.23.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+
+byo_crypto = get_option('byo_crypto')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_cal_dep = dependency('aws-c-cal')
@@ -93,6 +94,15 @@ elif host_machine.system() == 'emscripten'
     src += posix_src + emscripten_src + linux_src
     c_args += [ '-DAWS_ENABLE_EPOLL' ]
     inc += include_directories('source/emscripten')
+endif
+
+c_args += [ '-DINTEL_NO_ITTNOTIFY_API=1' ]
+
+if byo_crypto.allowed()
+    c_args += [ '-DBYO_CRYPTO=1' ]
+else
+    src += s2n_src
+    c_args += [ '-DAWS_USE_S2N_TLS=1' ]
 endif
 
 libaws_c_io = library(

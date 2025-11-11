@@ -1,7 +1,7 @@
 project(
   'aws-c-common',
   'c',
-  version: '0.12.4',
+  version: '0.12.5',
   meson_version: '>=0.63.0',
   license: 'Apache-2.0',
   default_options: ['warning_level=3'],

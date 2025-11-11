@@ -3,3 +3,9 @@ option(
     type: 'feature',
     description: 'Build unit tests',
 )
+
+option(
+    'byo_crypto',
+    type: 'feature',
+    description: 'Dont build a tls implementation or link against a crypto interface. This feature is only for unix builds currently.'
+)

@@ -11,7 +11,9 @@ fs = import('fs')
 pkg = import('pkgconfig')
 
 tests_opt = get_option('tests').disable_auto_if(meson.is_subproject())
-ed25519_everywhere = get_option('ed25519_everywhere')
+has_openssl = host_machine.system() in ['linux', 'emscripten']
+byo_crypto = get_option('byo_crypto')
+ed25519_everywhere = get_option('ed25519_everywhere').disable_auto_if(not has_openssl)
 
 public_c_args = ['-DAWS_CAL_USE_IMPORT_EXPORT=1']
 c_args = ['-DAWS_CAL_EXPORTS=1']
@@ -25,7 +27,7 @@ endif
 
 aws_c_common_dep = dependency('aws-c-common')
 libcrypto_dep = dependency(
-  'libcrypto',
+  'openssl',
   version: '>=1.1',
   required: ed25519_everywhere
 )
@@ -53,9 +55,13 @@ src = files(
   'source/symmetric_cipher.c',
 )
 
-if ed25519_everywhere or host_machine.system() == 'linux'
+if byo_crypto.allowed()
+  c_args += [ '-DBYO_CRYPTO=1' ]
+endif
+
+if libcrypto_dep.found()
   src += files('source/shared/ed25519.c', 'source/shared/lccrypto_common.c')
-  c_args = ['-DAWS_USE_LIBCRYPTO_TO_SUPPORT_ED25519_EVERYWHERE']
+  c_args += ['-DAWS_USE_LIBCRYPTO_TO_SUPPORT_ED25519_EVERYWHERE']
 else
   src += files('source/shared/ed25519_noop.c')
 endif

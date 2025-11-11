@@ -4,3 +4,4 @@ subprojects/*
 node_modules/
 build*/
 .vscode/
+install/
