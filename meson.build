@@ -7,6 +7,7 @@ subdir('implot')
 
 aws_cpp_sdk_core = dependency('aws-cpp-sdk-core')
 aws_cpp_sdk_logs = dependency('aws-cpp-sdk-logs')
+aws_cpp_sdk_sts = dependency('aws-cpp-sdk-sts')
 libcrypto = dependency('libcrypto')
 
 inc = include_directories('src')
@@ -16,7 +17,7 @@ src = files(
     'src/platform/aws.cpp'
 )
 
-deps = [imgui_dep, implot_dep, backend_dep, aws_cpp_sdk_core, aws_cpp_sdk_logs, libcrypto]
+deps = [imgui_dep, implot_dep, backend_dep, aws_cpp_sdk_core, aws_cpp_sdk_logs, aws_cpp_sdk_sts, libcrypto]
 
 if host_machine.system() == 'windows'
     src += files('src/platform/windows/windows.cpp')
