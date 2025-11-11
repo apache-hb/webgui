@@ -129,7 +129,7 @@ void loop() {
 
     if (ImGui::Begin("Aws Credentials")) {
         ImGui::InputText("Access Key ID", &gAwsAccessKeyId);
-        ImGui::InputText("Secret Access Key", &gAwsSecretKey);
+        ImGui::InputText("Secret Access Key", &gAwsSecretKey, ImGuiInputTextFlags_Password);
         ImAws::RegionCombo("Region", &gAwsRegion);
 
         if (ImGui::Button("Describe Log Groups")) {
@@ -154,6 +154,7 @@ void loop() {
                 Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
                 request.SetLimit(5);
                 gDescribeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
+                gDescribeLogGroupsOutcomePresent = true;
             });
         }
 
@@ -161,6 +162,8 @@ void loop() {
     }
 
     if (gDescribeLogGroupsOutcomePresent) {
+        gDescribeLogGroupsThread.reset();
+
         if (ImGui::Begin("Describe Log Groups Outcome")) {
             if (gDescribeLogGroupsOutcome.IsSuccess()) {
                 const auto& logGroups = gDescribeLogGroupsOutcome.GetResult().GetLogGroups();
