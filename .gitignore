@@ -1,0 +1,6 @@
+subprojects/*
+!subprojects/*.wrap
+!subprojects/packagefiles/*
+node_modules/
+build*/
+.vscode/

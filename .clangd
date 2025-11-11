@@ -1,0 +1,6 @@
+If:
+  PathMatch: .*\.cpp
+
+CompileFlags:
+  Add: [--sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -D__EMSCRIPTEN__]
+  Compiler: /home/elliothb/emsdk/upstream/emscripten/em++
