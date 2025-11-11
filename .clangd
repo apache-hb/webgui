@@ -1,6 +1,10 @@
+Diagnostics:
+  ClangTidy:
+    Remove: [modernize-*, readability-*, performance-*, misc-*]
+
 If:
   PathMatch: .*\.cpp
 
 CompileFlags:
-  Add: [--sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -D__EMSCRIPTEN__]
+  Add: [-target, wasm32-unknown-emscripten, -fignore-exceptions, -mllvm, -combiner-global-alias-analysis=false, -mllvm, -enable-emscripten-sjlj, -mllvm, -disable-lsr, --sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -DEMSCRIPTEN, -Xclang, -iwithsysroot/include/fakesdl, -Xclang, -iwithsysroot/include/compat]
   Compiler: /home/elliothb/emsdk/upstream/emscripten/em++

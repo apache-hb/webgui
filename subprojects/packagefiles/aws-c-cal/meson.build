@@ -87,7 +87,7 @@ elif host_machine.system() == 'darwin'
     'source/darwin/securityframework_ecc.c',
     'source/darwin/securityframework_rsa.c',
   )
-elif host_machine.system() == 'linux'
+elif host_machine.system() in ['linux', 'emscripten']
   src += files(
     'source/unix/openssl_aes.c',
     'source/unix/openssl_platform_init.c',
