@@ -127,6 +127,8 @@ static AwsRegion gAwsRegion;
 void loop() {
     sm::Platform::begin();
 
+    ImGui::DockSpaceOverViewport();
+
     if (ImGui::Begin("Aws Credentials")) {
         ImGui::InputText("Access Key ID", &gAwsAccessKeyId);
         ImGui::InputText("Secret Access Key", &gAwsSecretKey, ImGuiInputTextFlags_Password);
@@ -188,12 +190,10 @@ void loop() {
     }
 
     if (gShowDemoWindow) {
-        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow(&gShowDemoWindow);
     }
 
     if (gShowPlotDemoWindow) {
-        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
         ImPlot::ShowDemoWindow(&gShowPlotDemoWindow);
     }
 

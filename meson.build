@@ -36,7 +36,7 @@ else
 endif
 
 executable('gui', src,
-    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]'],
+    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]', '-lidbfs.js', '-sASYNCIFY', '-sASYNCIFY_IMPORTS=[emscripten_sleep]'],
     include_directories: inc,
     dependencies: deps,
     install: true,

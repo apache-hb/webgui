@@ -2,7 +2,9 @@
 
 #include <emscripten.h>
 
+#include <filesystem>
 #include <stdio.h>
+#include <thread>
 
 #define GLFW_INCLUDE_ES3
 #include <GLES3/gl3.h>
@@ -16,6 +18,8 @@
 #include <emscripten_browser_clipboard.h>
 
 using sm::Platform_Emscripten;
+
+using namespace std::chrono_literals;
 
 namespace clipboard = emscripten_browser_clipboard;
 
@@ -63,28 +67,25 @@ namespace {
 
         ImGuiIO &io = ImGui::GetIO();
 
-        // Disable loading of imgui.ini file
-        io.IniFilename = nullptr;
+        io.IniFilename = "/storage/imgui.ini";
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
         // Load Fonts
         io.Fonts->AddFontDefault();
     }
 
     const char *get_clipboard_imgui_adapter(ImGuiContext *ctx) {
-        printf("ImGui: Getting clipboard content %s\n", gClipboardContent.c_str());
         return gClipboardContent.c_str();
     }
 
     void set_clipboard_imgui_adapter(ImGuiContext *ctx, const char *text) {
-        printf("ImGui: Setting clipboard content: %s\n", text);
         gClipboardContent = text;
         clipboard::copy(gClipboardContent);
     }
 
     void init_clipboard() {
         clipboard::paste([](std::string&& pasted, [[maybe_unused]] void *user) {
-            printf("Pasted content: %s, %s\n", gClipboardContent.c_str(), pasted.c_str());
             gClipboardContent = std::move(pasted);
         }, nullptr);
 
@@ -92,11 +93,32 @@ namespace {
         pio.Platform_GetClipboardTextFn = get_clipboard_imgui_adapter;
         pio.Platform_SetClipboardTextFn = set_clipboard_imgui_adapter;
     }
+
+    EM_JS(bool, has_storage_mounted, (), {
+        return !!Module.storage;
+    });
 }
 
 int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
+    EM_ASM(
+        FS.mkdir('/storage');
+        FS.mount(IDBFS, {autoPersist: true}, '/storage');
+
+        FS.syncfs(true, function (err) {
+            Module.storage = true;
+        });
+    );
+
     if (int res = init_glfw(createInfo.title.c_str())) {
         return res;
+    }
+
+    // We don't want to wait forever, so limit to 5 attempts
+    size_t limit = 5;
+    while (!has_storage_mounted() && limit-- > 0) {
+        printf("Waiting for filesystem to be mounted...\n");
+        // Wait for the filesystem to be mounted
+        emscripten_sleep(10);
     }
 
     init_imgui();

@@ -19,6 +19,17 @@ using Aws::Utils::RateLimits::RateLimiterInterface;
 using sm::Platform_Emscripten;
 
 namespace {
+    bool equals_ignore_case(const char* a, const char* b) {
+        while (*a && *b) {
+            if (tolower(*a) != tolower(*b)) {
+                return false;
+            }
+            ++a;
+            ++b;
+        }
+        return *a == *b;
+    }
+
     class EmsdkWgetHttpClient final : public HttpClient {
         ClientConfiguration mClientConfig;
 
@@ -33,6 +44,10 @@ namespace {
         static std::vector<char*> create_headers(const HeaderValueCollection& source) {
             std::vector<char*> headers;
             for (const auto& header : source) {
+                // These cannot be set manually
+                if (equals_ignore_case(header.first.c_str(), "Host") || equals_ignore_case(header.first.c_str(), "User-Agent") || equals_ignore_case(header.first.c_str(), "Content-Length")) {
+                    continue;
+                }
                 headers.push_back(strdup(header.first.c_str()));
                 headers.push_back(strdup(header.second.c_str()));
             }
