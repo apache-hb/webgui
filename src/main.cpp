@@ -1,7 +1,4 @@
-#include "aws/cal/hash.h"
-#include "aws/logs/model/DescribeLogGroupsRequest.h"
-#include "openssl/hmac.h"
-#include <condition_variable>
+#include "platform/generic.hpp"
 #include <thread>
 #include <barrier>
 #include <stdio.h>
@@ -12,18 +9,13 @@
 #include <emscripten/wget.h>
 #endif
 
-#define GLFW_INCLUDE_ES3
-#include <GLES3/gl3.h>
-#include <GLFW/glfw3.h>
+#include "platform/platform.hpp"
+#include "platform/aws.hpp"
 
-#include <openssl/crypto.h>
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-
-#include <aws/cal/cal.h>
-#include <aws/cal/hmac.h>
+#include <imgui.h>
+#include <implot.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentials.h>
@@ -34,6 +26,7 @@
 #include <aws/core/http/standard/StandardHttpResponse.h>
 #include <aws/logs/CloudWatchLogsClient.h>
 #include <aws/logs/CloudWatchLogsServiceClientModel.h>
+#include <aws/logs/model/DescribeLogGroupsRequest.h>
 
 // Global variables - the window needs to be passed in to imgui
 GLFWwindow *g_window;
@@ -46,11 +39,7 @@ bool show_another_window = false;
 Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome g_describeLogGroupsOutcome;
 
 void loop() {
-  glfwPollEvents();
-
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
+  sm::Platform::begin();
 
   // 1. Show a simple window.
   // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets automatically
@@ -115,81 +104,9 @@ void loop() {
     ImGui::ShowDemoWindow(&show_demo_window);
   }
 
-  ImGui::Render();
+  ImPlot::ShowDemoWindow();
 
-  int display_w, display_h;
-  glfwMakeContextCurrent(g_window);
-  glfwGetFramebufferSize(g_window, &display_w, &display_h);
-  glViewport(0, 0, display_w, display_h);
-  glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  glfwMakeContextCurrent(g_window);
-}
-
-int init_gl() {
-  if (!glfwInit()) {
-    fprintf(stderr, "Failed to initialize GLFW\n");
-    return 1;
-  }
-
-  glfwWindowHint(GLFW_OPENGL_PROFILE,
-                 GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-
-  // Open a window and create its OpenGL context.
-  // The window is created with minimal size,
-  // which will be updated with an automatic resize.
-  // You could get the primary viewport size here to create.
-  g_window = glfwCreateWindow(1, 1, "WebGui Demo", NULL, NULL);
-  if (g_window == NULL) {
-    fprintf(stderr, "Failed to open GLFW window.\n");
-    glfwTerminate();
-    return -1;
-  }
-  glfwMakeContextCurrent(g_window); // Initialize GLEW
-
-  return 0;
-}
-
-int init_imgui() {
-  // Setup Dear ImGui binding
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui_ImplGlfw_InitForOpenGL(g_window, true);
-  ImGui_ImplGlfw_InstallEmscriptenCallbacks(g_window, "#canvas");
-  ImGui_ImplOpenGL3_Init("#version 300 es");
-
-  // Setup style
-  ImGui::StyleColorsDark();
-
-  ImGuiIO &io = ImGui::GetIO();
-
-  // Disable loading of imgui.ini file
-  io.IniFilename = nullptr;
-
-  // Load Fonts
-  io.Fonts->AddFontDefault();
-
-  return 0;
-}
-
-int init() {
-  init_gl();
-  init_imgui();
-  return 0;
-}
-
-void quit() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-
-  glfwDestroyWindow(g_window);
-  glfwTerminate();
+  sm::Platform::end();
 }
 
 class EmsdkWgetHttpClient final : public Aws::Http::HttpClient {
@@ -334,296 +251,20 @@ public:
   }
 };
 
-extern "C" struct aws_hmac *
-aws_sha256_hmac_default_new(struct aws_allocator *allocator,
-                            const struct aws_byte_cursor *secret);
-
-struct MySha256HmacImpl {};
-
-static void s_destroy(struct aws_hmac *hmac) {
-  if (hmac == NULL) {
-    return;
-  }
-
-  HMAC_CTX *ctx = (HMAC_CTX *)hmac->impl;
-  if (ctx != NULL) {
-    HMAC_CTX_free(ctx);
-  }
-
-  aws_mem_release(hmac->allocator, hmac);
-}
-
-static int s_update(struct aws_hmac *hmac,
-                    const struct aws_byte_cursor *to_hmac) {
-  if (!hmac->good) {
-    return aws_raise_error(AWS_ERROR_INVALID_STATE);
-  }
-
-  HMAC_CTX *ctx = (HMAC_CTX *)hmac->impl;
-
-  if (AWS_LIKELY(HMAC_Update(ctx, to_hmac->ptr, to_hmac->len))) {
-    return AWS_OP_SUCCESS;
-  }
-
-  hmac->good = false;
-  return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-}
-
-static int s_finalize(struct aws_hmac *hmac, struct aws_byte_buf *output) {
-  if (!hmac->good) {
-    return aws_raise_error(AWS_ERROR_INVALID_STATE);
-  }
-
-  HMAC_CTX *ctx = (HMAC_CTX *)hmac->impl;
-
-  size_t buffer_len = output->capacity - output->len;
-
-  if (buffer_len < hmac->digest_size) {
-    return aws_raise_error(AWS_ERROR_SHORT_BUFFER);
-  }
-
-  if (AWS_LIKELY(HMAC_Final(ctx, output->buffer + output->len,
-                            (unsigned int *)&buffer_len))) {
-    hmac->good = false;
-    output->len += hmac->digest_size;
-    return AWS_OP_SUCCESS;
-  }
-
-  hmac->good = false;
-  return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-}
-
-static struct aws_hmac_vtable s_sha256_hmac_vtable = {
-    .destroy = s_destroy,
-    .update = s_update,
-    .finalize = s_finalize,
-    .alg_name = "SHA256 HMAC",
-    .provider = "OpenSSL Compatible libcrypto",
-};
-
-struct aws_hmac *my_sha256_hmac_new(struct aws_allocator *allocator,
-                                    const struct aws_byte_cursor *secret) {
-
-  struct aws_hmac *hmac =
-      (aws_hmac *)aws_mem_acquire(allocator, sizeof(struct aws_hmac));
-
-  hmac->allocator = allocator;
-  hmac->vtable = &s_sha256_hmac_vtable;
-  hmac->digest_size = AWS_SHA256_HMAC_LEN;
-  HMAC_CTX *ctx = NULL;
-  ctx = HMAC_CTX_new();
-
-  if (!ctx) {
-    aws_raise_error(AWS_ERROR_CAL_CRYPTO_OPERATION_FAILED);
-    aws_mem_release(allocator, hmac);
-    return NULL;
-  }
-
-  hmac->impl = ctx;
-  hmac->good = true;
-
-  if (!HMAC_Init_ex(ctx, secret->ptr, secret->len, EVP_sha256(), NULL)) {
-    s_destroy(hmac);
-    aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-    return NULL;
-  }
-
-  return hmac;
-}
-
-static void s_destroy_digest(struct aws_hash *hash) {
-  if (hash == NULL) {
-    return;
-  }
-
-  EVP_MD_CTX *ctx = (EVP_MD_CTX *)hash->impl;
-  if (ctx != NULL) {
-    EVP_MD_CTX_free(ctx);
-  }
-
-  aws_mem_release(hash->allocator, hash);
-}
-
-static int s_update_digest(struct aws_hash *hash,
-                           const struct aws_byte_cursor *to_hash) {
-  if (!hash->good) {
-    return aws_raise_error(AWS_ERROR_INVALID_STATE);
-  }
-
-  EVP_MD_CTX *ctx = (EVP_MD_CTX *)hash->impl;
-
-  if (AWS_LIKELY(EVP_DigestUpdate(ctx, to_hash->ptr, to_hash->len))) {
-    return AWS_OP_SUCCESS;
-  }
-
-  hash->good = false;
-  return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-}
-
-static int s_finalize_digest(struct aws_hash *hash,
-                             struct aws_byte_buf *output) {
-  if (!hash->good) {
-    return aws_raise_error(AWS_ERROR_INVALID_STATE);
-  }
-
-  EVP_MD_CTX *ctx = (EVP_MD_CTX *)hash->impl;
-
-  size_t buffer_len = output->capacity - output->len;
-
-  if (buffer_len < hash->digest_size) {
-    return aws_raise_error(AWS_ERROR_SHORT_BUFFER);
-  }
-
-  if (AWS_LIKELY(EVP_DigestFinal_ex(ctx, output->buffer + output->len,
-                                    (unsigned int *)&buffer_len))) {
-    output->len += hash->digest_size;
-    hash->good = false;
-    return AWS_OP_SUCCESS;
-  }
-
-  hash->good = false;
-  return aws_raise_error(AWS_ERROR_INVALID_ARGUMENT);
-}
-
-static struct aws_hash_vtable s_md5_vtable = {
-    .destroy = s_destroy_digest,
-    .update = s_update_digest,
-    .finalize = s_finalize_digest,
-    .alg_name = "MD5",
-    .provider = "OpenSSL Compatible libcrypto",
-};
-
-static struct aws_hash_vtable s_sha512_vtable = {
-    .destroy = s_destroy_digest,
-    .update = s_update_digest,
-    .finalize = s_finalize_digest,
-    .alg_name = "SHA512",
-    .provider = "OpenSSL Compatible libcrypto",
-};
-
-static struct aws_hash_vtable s_sha256_vtable = {
-    .destroy = s_destroy_digest,
-    .update = s_update_digest,
-    .finalize = s_finalize_digest,
-    .alg_name = "SHA256",
-    .provider = "OpenSSL Compatible libcrypto",
-};
-
-static struct aws_hash_vtable s_sha1_vtable = {
-    .destroy = s_destroy_digest,
-    .update = s_update_digest,
-    .finalize = s_finalize_digest,
-    .alg_name = "SHA1",
-    .provider = "OpenSSL Compatible libcrypto",
-};
-
-struct aws_hash *my_md5_new(struct aws_allocator *allocator) {
-  struct aws_hash *hash =
-      (aws_hash *)aws_mem_acquire(allocator, sizeof(struct aws_hash));
-
-  hash->allocator = allocator;
-  hash->vtable = &s_md5_vtable;
-  hash->digest_size = AWS_MD5_LEN;
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-  hash->impl = ctx;
-  hash->good = true;
-
-  AWS_FATAL_ASSERT(hash->impl);
-
-  if (!EVP_DigestInit_ex(ctx, EVP_md5(), NULL)) {
-    s_destroy_digest(hash);
-    aws_raise_error(AWS_ERROR_UNKNOWN);
-    return NULL;
-  }
-
-  return hash;
-}
-
-struct aws_hash *my_sha512_default_new(struct aws_allocator *allocator) {
-  struct aws_hash *hash =
-      (aws_hash *)aws_mem_acquire(allocator, sizeof(struct aws_hash));
-
-  hash->allocator = allocator;
-  hash->vtable = &s_sha512_vtable;
-  hash->digest_size = AWS_SHA512_LEN;
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-  hash->impl = ctx;
-  hash->good = true;
-
-  AWS_FATAL_ASSERT(hash->impl);
-
-  if (!EVP_DigestInit_ex(ctx, EVP_sha512(), NULL)) {
-    s_destroy_digest(hash);
-    aws_raise_error(AWS_ERROR_UNKNOWN);
-    return NULL;
-  }
-
-  return hash;
-}
-
-struct aws_hash *my_sha256_default_new(struct aws_allocator *allocator) {
-  struct aws_hash *hash =
-      (aws_hash *)aws_mem_acquire(allocator, sizeof(struct aws_hash));
-
-  hash->allocator = allocator;
-  hash->vtable = &s_sha256_vtable;
-  hash->digest_size = AWS_SHA256_LEN;
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-  hash->impl = ctx;
-  hash->good = true;
-
-  AWS_FATAL_ASSERT(hash->impl);
-
-  if (!EVP_DigestInit_ex(ctx, EVP_sha256(), NULL)) {
-    s_destroy_digest(hash);
-    aws_raise_error(AWS_ERROR_UNKNOWN);
-    return NULL;
-  }
-
-  return hash;
-}
-
-struct aws_hash *my_sha1_default_new(struct aws_allocator *allocator) {
-  struct aws_hash *hash =
-      (aws_hash *)aws_mem_acquire(allocator, sizeof(struct aws_hash));
-
-  hash->allocator = allocator;
-  hash->vtable = &s_sha1_vtable;
-  hash->digest_size = AWS_SHA1_LEN;
-  EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-  hash->impl = ctx;
-  hash->good = true;
-
-  AWS_FATAL_ASSERT(hash->impl);
-
-  if (!EVP_DigestInit_ex(ctx, EVP_sha1(), NULL)) {
-    s_destroy_digest(hash);
-    aws_raise_error(AWS_ERROR_UNKNOWN);
-    return NULL;
-  }
-
-  return hash;
-}
-
 int main(int argc, char **argv) {
-  if (init() != 0)
-    return 1;
+  sm::PlatformCreateInfo createInfo {
+    .title = "AWS C++ WASM",
+    .clear = {0.45f, 0.55f, 0.60f, 1.00f}
+  };
 
-  OPENSSL_init_crypto(
-      OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
-  auto alloc = aws_default_allocator();
-  aws_set_sha256_hmac_new_fn(my_sha256_hmac_new);
-  aws_cal_library_init(alloc);
-  aws_set_md5_new_fn(my_md5_new);
-  aws_set_sha256_new_fn(my_sha256_default_new);
-  aws_set_sha512_new_fn(my_sha512_default_new);
-  aws_set_sha1_new_fn(my_sha1_default_new);
+  if (int err = sm::Platform::setup(createInfo)) {
+    return err;
+  }
+
+  sm::aws_init_byo_crypto();
 
   Aws::SDKOptions options;
-  options.httpOptions.httpClientFactory_create_fn = []() {
-    return Aws::MakeShared<EmsdkWgetClientFactory>(
-        "EmsdkWgetClientFactoryAllocationTag");
-  };
+  sm::Platform::configure_aws_sdk_options(options);
 
   Aws::InitAPI(options);
 
@@ -650,13 +291,12 @@ int main(int argc, char **argv) {
     barrier.arrive_and_wait();
   });
 
+
   barrier.arrive_and_wait();
 
-#ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop(loop, 0, 1);
-#endif
+  sm::Platform::run(loop);
 
-  quit();
+  sm::Platform::finalize();
 
   Aws::ShutdownAPI(options);
 

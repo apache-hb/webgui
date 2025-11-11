@@ -1,0 +1,14 @@
+#pragma once
+
+#include "platform/generic.hpp"
+
+namespace sm {
+    struct Platform_Emscripten : public Platform_Generic {
+        static int setup(const PlatformCreateInfo& createInfo);
+        static void finalize();
+        static void run(void (*fn)());
+        static void begin();
+        static void end();
+        static void configure_aws_sdk_options(Aws::SDKOptions& options);
+    };
+}
