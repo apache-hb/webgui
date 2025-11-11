@@ -6,6 +6,7 @@ subdir('src/aws-cpp-sdk-core')
 
 subdir('generated/src/aws-cpp-sdk-account')
 subdir('generated/src/aws-cpp-sdk-acm')
+subdir('generated/src/aws-cpp-sdk-cognito-identity')
 subdir('generated/src/aws-cpp-sdk-dynamodb')
 subdir('generated/src/aws-cpp-sdk-ec2')
 subdir('generated/src/aws-cpp-sdk-ecs')
@@ -18,3 +19,5 @@ subdir('generated/src/aws-cpp-sdk-monitoring')
 subdir('generated/src/aws-cpp-sdk-route53')
 subdir('generated/src/aws-cpp-sdk-s3')
 subdir('generated/src/aws-cpp-sdk-sts')
+
+subdir('src/aws-cpp-sdk-identity-management')

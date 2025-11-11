@@ -7,8 +7,8 @@ source_hash = 7433287457c21c2f0bf0236916ed51ae95d040d5064e2fa5a037c8bd800e43f8
 patch_directory = aws-sdk-cpp
 
 [provide]
-dependency_names = aws-cpp-sdk-core, aws-cpp-sdk-account, aws-cpp-sdk-acm, \
-    aws-cpp-sdk-dynamodb, aws-cpp-sdk-ec2, \
+dependency_names = aws-cpp-sdk-core, aws-cpp-sdk-identity-management, aws-cpp-sdk-account, aws-cpp-sdk-acm, \
+    aws-cpp-sdk-cognito-identity, aws-cpp-sdk-dynamodb, aws-cpp-sdk-ec2, \
     aws-cpp-sdk-ecs, aws-cpp-sdk-elasticloadbalancing, aws-cpp-sdk-elasticloadbalancingv2, \
     aws-cpp-sdk-iam, aws-cpp-sdk-kms, aws-cpp-sdk-logs, aws-cpp-sdk-monitoring, \
     aws-cpp-sdk-route53, aws-cpp-sdk-s3, aws-cpp-sdk-sts
