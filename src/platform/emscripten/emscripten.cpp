@@ -72,23 +72,20 @@ namespace {
     }
 
     const char *get_clipboard_imgui_adapter(ImGuiContext *ctx) {
+        printf("ImGui: Getting clipboard content %s\n", gClipboardContent.c_str());
         return gClipboardContent.c_str();
     }
 
     void set_clipboard_imgui_adapter(ImGuiContext *ctx, const char *text) {
+        printf("ImGui: Setting clipboard content: %s\n", text);
         gClipboardContent = text;
         clipboard::copy(gClipboardContent);
     }
 
     void init_clipboard() {
         clipboard::paste([](std::string&& pasted, [[maybe_unused]] void *user) {
-            printf("Pasted content: %s\n", pasted.c_str());
+            printf("Pasted content: %s, %s\n", gClipboardContent.c_str(), pasted.c_str());
             gClipboardContent = std::move(pasted);
-        }, nullptr);
-
-        clipboard::copy([]([[maybe_unused]] void *user) {
-            printf("Copying content: %s\n", gClipboardContent.c_str());
-            return gClipboardContent.c_str();
         }, nullptr);
 
         ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
