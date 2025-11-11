@@ -1,0 +1,10 @@
+[wrap-file]
+directory = aws-sdk-cpp-1.11.687
+source_url = https://github.com/aws/aws-sdk-cpp/archive/refs/tags/1.11.687.tar.gz
+source_filename = aws-sdk-cpp-1.11.687.tar.gz
+source_hash = 7433287457c21c2f0bf0236916ed51ae95d040d5064e2fa5a037c8bd800e43f8
+
+patch_directory = aws-sdk-cpp
+
+[provide]
+dependency_names = aws-cpp-sdk-core, aws-cpp-sdk-logs

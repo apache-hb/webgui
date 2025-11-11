@@ -1,3 +1,7 @@
+#include "aws/core/Aws.h"
+#include "aws/core/auth/AWSCredentials.h"
+#include "aws/core/auth/AWSCredentialsProvider.h"
+#include "aws/logs/CloudWatchLogsServiceClientModel.h"
 #include <stdio.h>
 
 #ifdef __EMSCRIPTEN__
@@ -12,6 +16,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
+
+#include <aws/logs/CloudWatchLogsClient.h>
 
 // Global variables - the window needs to be passed in to imgui
 GLFWwindow *g_window;
@@ -160,11 +166,16 @@ int main(int argc, char **argv) {
   if (init() != 0)
     return 1;
 
+  Aws::SDKOptions options;
+  Aws::InitAPI(options);
+
 #ifdef __EMSCRIPTEN__
   emscripten_set_main_loop(loop, 0, 1);
 #endif
 
   quit();
+
+  Aws::ShutdownAPI(options);
 
   return 0;
 }

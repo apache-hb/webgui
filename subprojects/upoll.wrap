@@ -1,0 +1,10 @@
+[wrap-file]
+directory = upoll-1dff71e20b015c33685514ab996929fb6fa58d59
+source_url = https://github.com/Zubnix/upoll/archive/1dff71e20b015c33685514ab996929fb6fa58d59.tar.gz
+source_filename = upoll-1dff71e20b015c33685514ab996929fb6fa58d59.tar.gz
+source_hash = 35c3df9ab7bbb870feec9ee8f0ea38c649737246acb7b516d2dbca636814376e
+
+patch_directory = upoll
+
+[provide]
+dependency_names = upoll

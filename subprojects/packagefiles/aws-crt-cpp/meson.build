@@ -1,4 +1,5 @@
-project('aws-crt-cpp', 'cpp', version: '0.35.2', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-crt-cpp',
+'cpp', version: '0.35.2', license: 'Apache-2.0', meson_version: '>=0.63.0')
 
 pkg = import('pkgconfig')
 
@@ -28,9 +29,48 @@ deps = [
 inc = include_directories('include')
 
 src = files(
-    'source/Allocator.cpp',
+    'source/DnsUtils.cpp',
+    'source/StringUtils.cpp',
     'source/Api.cpp',
+    'source/UUID.cpp',
+    'source/ImdsClient.cpp',
+    'source/Allocator.cpp',
     'source/DateTime.cpp',
+    'source/Types.cpp',
+    'source/JsonObject.cpp',
+    'source/mqtt/MqttConnectionCore.cpp',
+    'source/mqtt/MqttClient.cpp',
+    'source/mqtt/Mqtt5Packets.cpp',
+    'source/mqtt/MqttConnection.cpp',
+    'source/mqtt/Mqtt5Client.cpp',
+    'source/mqtt/Mqtt5ClientCore.cpp',
+    'source/endpoints/RuleEngine.cpp',
+    'source/io/Uri.cpp',
+    'source/io/HostResolver.cpp',
+    'source/io/Bootstrap.cpp',
+    'source/io/ChannelHandler.cpp',
+    'source/io/Stream.cpp',
+    'source/io/TlsOptions.cpp',
+    'source/io/SocketOptions.cpp',
+    'source/io/Pkcs11.cpp',
+    'source/io/EventLoopGroup.cpp',
+    'source/iot/MqttRequestResponseClient.cpp',
+    'source/iot/MqttCommon.cpp',
+    'source/iot/MqttClient.cpp',
+    'source/iot/Mqtt5Client.cpp',
+    'source/auth/Sigv4Signing.cpp',
+    'source/auth/Credentials.cpp',
+    'source/checksum/CRC.cpp',
+    'source/http/HttpProxyStrategy.cpp',
+    'source/http/HttpConnection.cpp',
+    'source/http/HttpConnectionManager.cpp',
+    'source/http/HttpRequestResponse.cpp',
+    'source/cbor/Cbor.cpp',
+    'source/crypto/HMAC.cpp',
+    'source/crypto/SymmetricCipher.cpp',
+    'source/crypto/Hash.cpp',
+    'source/crypto/HKDF.cpp',
+    'source/crypto/SecureRandom.cpp'
 )
 
 libaws_cpp_crt = library(
