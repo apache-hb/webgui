@@ -24,10 +24,6 @@
 static bool gShowDemoWindow = true;
 static bool gShowPlotDemoWindow = true;
 
-static std::unique_ptr<std::jthread> gDescribeLogGroupsThread;
-static std::atomic<bool> gDescribeLogGroupsOutcomePresent = false;
-static Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome gDescribeLogGroupsOutcome;
-
 static constexpr const char *kRegionNames[] = {
     Aws::Region::AF_SOUTH_1,
     Aws::Region::AP_EAST_1,
@@ -120,9 +116,40 @@ namespace ImAws {
     }
 }
 
+template<typename T>
+class AsyncValue {
+    T mValue;
+    std::atomic<bool> mIsReady{false};
+
+public:
+    AsyncValue() = default;
+
+    void set_value(const T& value) {
+        mValue = value;
+        mIsReady.store(true);
+    }
+
+    bool is_ready() const {
+        return mIsReady.load();
+    }
+
+    T get_value() const {
+        assert(is_ready());
+        return mValue;
+    }
+
+    void clear() {
+        mIsReady.store(false);
+    }
+};
+
 static std::string gAwsAccessKeyId = "AccessKeyId";
 static std::string gAwsSecretKey = "";
 static AwsRegion gAwsRegion;
+
+static std::unique_ptr<std::jthread> gDescribeLogGroupsThread;
+static std::atomic<bool> gDescribeLogGroupsOutcomePresent = false;
+static Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome gDescribeLogGroupsOutcome;
 
 void loop() {
     sm::Platform::begin();
@@ -216,31 +243,6 @@ int main(int argc, char **argv) {
     sm::Platform::configure_aws_sdk_options(options);
 
     Aws::InitAPI(options);
-
-    std::barrier barrier{2};
-
-    std::thread worker([&barrier]() {
-        Aws::Auth::AWSCredentials credentials{
-            "Secret", "Secret"};
-
-        auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>(
-            "AwsAllocationTag", credentials);
-
-        Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-        clientConfigInitValues.shouldDisableIMDS = true;
-
-        Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{
-            clientConfigInitValues};
-        config.region = "us-east-1";
-        Aws::CloudWatchLogs::CloudWatchLogsClient cwlClient{provider, config};
-
-        Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
-        request.SetLimit(5);
-        gDescribeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
-        barrier.arrive_and_wait();
-    });
-
-    barrier.arrive_and_wait();
 
     sm::Platform::run(loop);
 
