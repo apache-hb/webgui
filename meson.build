@@ -16,11 +16,15 @@ src = files(
     'src/platform/aws.cpp'
 )
 
+deps = [imgui_dep, implot_dep, backend_dep, aws_cpp_sdk_core, aws_cpp_sdk_logs, libcrypto]
+
 if host_machine.system() == 'windows'
     src += files('src/platform/windows/windows.cpp')
 elif host_machine.system() == 'linux'
     src += files('src/platform/linux/linux.cpp')
 elif host_machine.system() == 'emscripten'
+    clipboard_dep = dependency('emscripten-browser-clipboard')
+    deps += [clipboard_dep]
     src += files(
         'src/platform/emscripten/emscripten.cpp',
         'src/platform/emscripten/emsdk_wget_http.cpp',
@@ -32,9 +36,9 @@ else
 endif
 
 executable('gui', src,
-    link_args: ['-lGL', '-sFETCH'],
+    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]'],
     include_directories: inc,
-    dependencies: [imgui_dep, implot_dep, backend_dep, aws_cpp_sdk_core, aws_cpp_sdk_logs, libcrypto],
+    dependencies: deps,
     install: true,
     install_dir: get_option('datadir'),
 )

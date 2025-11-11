@@ -13,11 +13,16 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <emscripten_browser_clipboard.h>
+
 using sm::Platform_Emscripten;
+
+namespace clipboard = emscripten_browser_clipboard;
 
 namespace {
     GLFWwindow *gWindow{};
-    std::array<float, 4> clear{};
+    std::array<float, 4> gClearColour{};
+    std::string gClipboardContent;
 
     int init_glfw(const char *title) {
         if (!glfwInit()) {
@@ -65,6 +70,31 @@ namespace {
         // Load Fonts
         io.Fonts->AddFontDefault();
     }
+
+    const char *get_clipboard_imgui_adapter(ImGuiContext *ctx) {
+        return gClipboardContent.c_str();
+    }
+
+    void set_clipboard_imgui_adapter(ImGuiContext *ctx, const char *text) {
+        gClipboardContent = text;
+        clipboard::copy(gClipboardContent);
+    }
+
+    void init_clipboard() {
+        clipboard::paste([](std::string&& pasted, [[maybe_unused]] void *user) {
+            printf("Pasted content: %s\n", pasted.c_str());
+            gClipboardContent = std::move(pasted);
+        }, nullptr);
+
+        clipboard::copy([]([[maybe_unused]] void *user) {
+            printf("Copying content: %s\n", gClipboardContent.c_str());
+            return gClipboardContent.c_str();
+        }, nullptr);
+
+        ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
+        pio.Platform_GetClipboardTextFn = get_clipboard_imgui_adapter;
+        pio.Platform_SetClipboardTextFn = set_clipboard_imgui_adapter;
+    }
 }
 
 int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
@@ -73,8 +103,9 @@ int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
     }
 
     init_imgui();
+    init_clipboard();
 
-    clear = createInfo.clear;
+    gClearColour = createInfo.clear;
 
     return 0;
 }
@@ -113,7 +144,7 @@ void Platform_Emscripten::end() {
     glfwMakeContextCurrent(gWindow);
     glfwGetFramebufferSize(gWindow, &width, &height);
     glViewport(0, 0, width, height);
-    glClearColor(clear[0], clear[1], clear[2], clear[3]);
+    glClearColor(gClearColour[0], gClearColour[1], gClearColour[2], gClearColour[3]);
     glClear(GL_COLOR_BUFFER_BIT);
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

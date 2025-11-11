@@ -1,22 +1,15 @@
-#include "platform/generic.hpp"
 #include <thread>
 #include <barrier>
 #include <stdio.h>
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/fetch.h>
-#include <emscripten/wget.h>
-#endif
 
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
 
 #include <imgui.h>
 #include <implot.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
+#include <aws/core/Region.h>
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentials.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
@@ -28,277 +21,229 @@
 #include <aws/logs/CloudWatchLogsServiceClientModel.h>
 #include <aws/logs/model/DescribeLogGroupsRequest.h>
 
-// Global variables - the window needs to be passed in to imgui
-GLFWwindow *g_window;
+static bool gShowDemoWindow = true;
+static bool gShowPlotDemoWindow = true;
 
-// Global variables - these can be edited in the demo
-ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-bool show_demo_window = true;
-bool show_another_window = false;
+static std::unique_ptr<std::jthread> gDescribeLogGroupsThread;
+static std::atomic<bool> gDescribeLogGroupsOutcomePresent = false;
+static Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome gDescribeLogGroupsOutcome;
 
-Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome g_describeLogGroupsOutcome;
+static constexpr const char *kRegionNames[] = {
+    Aws::Region::AF_SOUTH_1,
+    Aws::Region::AP_EAST_1,
+    Aws::Region::AP_EAST_2,
+    Aws::Region::AP_NORTHEAST_1,
+    Aws::Region::AP_NORTHEAST_2,
+    Aws::Region::AP_NORTHEAST_3,
+    Aws::Region::AP_SOUTH_1,
+    Aws::Region::AP_SOUTH_2,
+    Aws::Region::AP_SOUTHEAST_1,
+    Aws::Region::AP_SOUTHEAST_2,
+    Aws::Region::AP_SOUTHEAST_3,
+    Aws::Region::AP_SOUTHEAST_4,
+    Aws::Region::AP_SOUTHEAST_5,
+    Aws::Region::AP_SOUTHEAST_6,
+    Aws::Region::AP_SOUTHEAST_7,
+    Aws::Region::AWS_CN_GLOBAL,
+    Aws::Region::AWS_GLOBAL,
+    Aws::Region::AWS_ISO_B_GLOBAL,
+    Aws::Region::AWS_ISO_E_GLOBAL,
+    Aws::Region::AWS_ISO_F_GLOBAL,
+    Aws::Region::AWS_ISO_GLOBAL,
+    Aws::Region::AWS_US_GOV_GLOBAL,
+    Aws::Region::CA_CENTRAL_1,
+    Aws::Region::CA_WEST_1,
+    Aws::Region::CN_NORTH_1,
+    Aws::Region::CN_NORTHWEST_1,
+    Aws::Region::EU_CENTRAL_1,
+    Aws::Region::EU_CENTRAL_2,
+    Aws::Region::EU_ISOE_WEST_1,
+    Aws::Region::EU_NORTH_1,
+    Aws::Region::EU_SOUTH_1,
+    Aws::Region::EU_SOUTH_2,
+    Aws::Region::EU_WEST_1,
+    Aws::Region::EU_WEST_2,
+    Aws::Region::EU_WEST_3,
+    Aws::Region::EUSC_DE_EAST_1,
+    Aws::Region::IL_CENTRAL_1,
+    Aws::Region::ME_CENTRAL_1,
+    Aws::Region::ME_SOUTH_1,
+    Aws::Region::MX_CENTRAL_1,
+    Aws::Region::SA_EAST_1,
+    Aws::Region::US_EAST_1,
+    Aws::Region::US_EAST_2,
+    Aws::Region::US_GOV_EAST_1,
+    Aws::Region::US_GOV_WEST_1,
+    Aws::Region::US_ISO_EAST_1,
+    Aws::Region::US_ISO_WEST_1,
+    Aws::Region::US_ISOB_EAST_1,
+    Aws::Region::US_ISOB_WEST_1,
+    Aws::Region::US_ISOF_EAST_1,
+    Aws::Region::US_ISOF_SOUTH_1,
+    Aws::Region::US_WEST_1,
+    Aws::Region::US_WEST_2,
+};
 
-void loop() {
-  sm::Platform::begin();
+class AwsRegion;
 
-  // 1. Show a simple window.
-  // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets automatically
-  // appears in a window called "Debug".
-  {
-    static float f = 0.0f;
-    static int counter = 0;
-    ImGui::Text(
-        "Hello, world!"); // Display some text (you can use a format string too)
-    ImGui::SliderFloat("float", &f, 0.0f,
-                       1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-    ImGui::ColorEdit3(
-        "clear color",
-        (float *)&clear_color); // Edit 3 floats representing a color
-
-    ImGui::Checkbox(
-        "Demo Window",
-        &show_demo_window); // Edit bools storing our windows open/close state
-    ImGui::Checkbox("Another Window", &show_another_window);
-
-    if (ImGui::Button("Button")) // Buttons return true when clicked (NB: most
-                                 // widgets return true when edited/activated)
-      counter++;
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
-
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-    if (g_describeLogGroupsOutcome.IsSuccess()) {
-      const auto &logGroups =
-          g_describeLogGroupsOutcome.GetResult().GetLogGroups();
-      ImGui::Text("Log Groups:");
-      for (const auto &logGroup : logGroups) {
-        ImGui::BulletText("%s", logGroup.GetLogGroupName().c_str());
-      }
-    } else {
-      ImGui::Text("Failed to describe log groups: %s",
-                  g_describeLogGroupsOutcome.GetError().GetMessage().c_str());
-    }
-  }
-
-  // 2. Show another simple window. In most cases you will use an explicit
-  // Begin/End pair to name your windows.
-  if (show_another_window) {
-    ImGui::Begin("Another Window", &show_another_window);
-    ImGui::Text("Hello from another window!");
-    if (ImGui::Button("Close Me"))
-      show_another_window = false;
-    ImGui::End();
-  }
-
-  // 3. Show the ImGui demo window. Most of the sample code is in
-  // ImGui::ShowDemoWindow(). Read its code to learn more about Dear ImGui!
-  if (show_demo_window) {
-    ImGui::SetNextWindowPos(
-        ImVec2(650, 20),
-        ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call
-                                 // this because positions are saved in .ini
-                                 // file anyway. Here we just want to make the
-                                 // demo initial state a bit more friendly!
-    ImGui::ShowDemoWindow(&show_demo_window);
-  }
-
-  ImPlot::ShowDemoWindow();
-
-  sm::Platform::end();
+namespace ImAws {
+    void RegionCombo(const char *label, AwsRegion *region);
 }
 
-class EmsdkWgetHttpClient final : public Aws::Http::HttpClient {
-  Aws::Client::ClientConfiguration mClientConfig;
+class AwsRegion {
+    static constexpr size_t kDefaultRegionIndex = std::distance(std::begin(kRegionNames), std::find(std::begin(kRegionNames), std::end(kRegionNames), Aws::Region::US_EAST_1));
+
+    size_t index{kDefaultRegionIndex};
+
+    friend void ImAws::RegionCombo(const char *label, AwsRegion *region);
 
 public:
-  EmsdkWgetHttpClient(
-      const Aws::Client::ClientConfiguration &clientConfiguration)
-      : mClientConfig(clientConfiguration) {}
-
-  std::shared_ptr<Aws::Http::HttpResponse> MakeRequest(
-      const std::shared_ptr<Aws::Http::HttpRequest> &request,
-      Aws::Utils::RateLimits::RateLimiterInterface *readLimiter = nullptr,
-      Aws::Utils::RateLimits::RateLimiterInterface *writeLimiter =
-          nullptr) const override {
-
-    std::vector<char> requestBody;
-
-    if (auto body = request->GetContentBody()) {
-      body->seekg(0, std::ios::end);
-      size_t size = body->tellg();
-      body->seekg(0, std::ios::beg);
-      requestBody.resize(size);
-      body->read(requestBody.data(), size);
+    std::string getSelectedRegionId() const {
+        return kRegionNames[index];
     }
+};
 
-    std::vector<const char *> headers;
-    for (const auto &header : request->GetHeaders()) {
-      std::cout << "Header: " << header.first << " = " << header.second
-                << std::endl;
-      headers.push_back(strdup(header.first.c_str()));
-      headers.push_back(strdup(header.second.c_str()));
+namespace ImAws {
+    void RegionCombo(const char *label, AwsRegion *region) {
+        if (ImGui::BeginCombo(label, kRegionNames[region->index])) {
+            for (size_t i = 0; i < sizeof(kRegionNames) / sizeof(kRegionNames[0]); ++i) {
+                const bool isSelected = (region->index == i);
+                if (ImGui::Selectable(kRegionNames[i], isSelected)) {
+                    region->index = i;
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
-    headers.push_back(nullptr);
+}
 
-    auto freeHeaders = [&headers]() {
-      for (const auto &header : headers) {
-        free((void *)header);
-      }
-    };
+static std::string gAwsAccessKeyId = "AccessKeyId";
+static std::string gAwsSecretKey = "";
+static AwsRegion gAwsRegion;
 
-    for (const auto &header : headers) {
-      std::cout << "Entry: " << (header ? header : "NULL") << std::endl;
-    }
+void loop() {
+    sm::Platform::begin();
 
-    emscripten_fetch_attr_t attr{};
-    emscripten_fetch_attr_init(&attr);
-    strncpy(
-        attr.requestMethod,
-        Aws::Http::HttpMethodMapper::GetNameForHttpMethod(request->GetMethod()),
-        sizeof(attr.requestMethod) - 1);
-    attr.attributes =
-        EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS;
-    attr.timeoutMSecs =
-        static_cast<unsigned int>(mClientConfig.requestTimeoutMs);
-    attr.requestData = requestBody.data();
-    attr.requestDataSize = requestBody.size();
-    attr.requestHeaders = headers.data();
+    if (ImGui::Begin("Aws Credentials")) {
+        ImGui::InputText("Access Key ID", &gAwsAccessKeyId);
+        ImGui::InputText("Secret Access Key", &gAwsSecretKey);
+        ImAws::RegionCombo("Region", &gAwsRegion);
 
-    emscripten_fetch_t *fetch =
-        emscripten_fetch(&attr, request->GetUri().GetURIString().c_str());
+        if (ImGui::Button("Describe Log Groups")) {
+            // Trigger describe log groups
+            gDescribeLogGroupsThread = std::make_unique<std::jthread>([
+                accessKeyId = gAwsAccessKeyId,
+                secretKey = gAwsSecretKey,
+                region = gAwsRegion.getSelectedRegionId()
+            ] {
+                Aws::Auth::AWSCredentials credentials{accessKeyId, secretKey};
 
-    printf("id: %u, data: %p, size: %d, status: %d\n", fetch->id, fetch->data, (int)fetch->numBytes, fetch->status);
-    if (fetch->status == 200) {
-      auto response =
-          Aws::MakeShared<Aws::Http::Standard::StandardHttpResponse>(
-              "EmsdkWgetHttpClientAllocationTag", request);
+                auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>("AwsAllocationTag", credentials);
 
-      response->SetResponseCode(
-          static_cast<Aws::Http::HttpResponseCode>(fetch->status));
+                Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
+                clientConfigInitValues.shouldDisableIMDS = true;
 
-      size_t headerCount = emscripten_fetch_get_response_headers_length(fetch);
-      std::unique_ptr<char[]> responseHeadersPacked{new char[headerCount + 1]};
-      emscripten_fetch_get_response_headers(fetch, responseHeadersPacked.get(),
-                                            headerCount + 1);
-      char **responseHeaders =
-          emscripten_fetch_unpack_response_headers(responseHeadersPacked.get());
+                Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{clientConfigInitValues};
+                config.region = region;
 
-      size_t i = 0;
-      while (true) {
-        char *key = responseHeaders[i++];
-        if (!key) {
-          break;
+                Aws::CloudWatchLogs::CloudWatchLogsClient cwlClient{provider, config};
+
+                Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
+                request.SetLimit(5);
+                gDescribeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
+            });
         }
 
-        char *value = responseHeaders[i++];
-        response->AddHeader(Aws::String(key), Aws::String(value));
-      }
-
-      emscripten_fetch_free_unpacked_response_headers(responseHeaders);
-
-      response->SetOriginatingRequest(request);
-      response->GetResponseBody().write(fetch->data, fetch->numBytes);
-
-      emscripten_fetch_close(fetch);
-      freeHeaders();
-      return response;
-    } else {
-      printf("EmsdkWgetHttpClient request failed with status code %d\n",
-             fetch->status);
-
-      auto response =
-          Aws::MakeShared<Aws::Http::Standard::StandardHttpResponse>(
-              "EmsdkWgetHttpClientAllocationTag", request);
-
-      response->SetResponseCode(
-          static_cast<Aws::Http::HttpResponseCode>(fetch->status));
-      response->SetOriginatingRequest(request);
-      emscripten_fetch_close(fetch);
-      freeHeaders();
-      return response;
+        ImGui::End();
     }
-  }
-};
 
-class EmsdkWgetClientFactory final : public Aws::Http::HttpClientFactory {
+    if (gDescribeLogGroupsOutcomePresent) {
+        if (ImGui::Begin("Describe Log Groups Outcome")) {
+            if (gDescribeLogGroupsOutcome.IsSuccess()) {
+                const auto& logGroups = gDescribeLogGroupsOutcome.GetResult().GetLogGroups();
+                ImGui::Text("Log Groups:");
+                for (const auto &logGroup : logGroups) {
+                    ImGui::BulletText("%s", logGroup.GetLogGroupName().c_str());
+                }
+            } else {
+                const auto& err = gDescribeLogGroupsOutcome.GetError();
+                ImGui::Text("Exception: %s", err.GetExceptionName().c_str());
+                ImGui::Text("Request ID: %s", err.GetRequestId().c_str());
+                ImGui::Text("Error Message: %s", err.GetMessage().c_str());
+            }
+            ImGui::End();
+        }
+    }
 
-public:
-  std::shared_ptr<Aws::Http::HttpClient>
-  CreateHttpClient(const Aws::Client::ClientConfiguration &clientConfiguration)
-      const override {
-    return Aws::MakeShared<EmsdkWgetHttpClient>(
-        "EmsdkWgetHttpClientAllocationTag", clientConfiguration);
-  }
+    if (ImGui::Begin("ImGui Info")) {
+        ImGui::Checkbox("Demo Window", &gShowDemoWindow);
+        ImGui::Checkbox("Plot Demo Window", &gShowPlotDemoWindow);
+        ImGui::End();
+    }
 
-  std::shared_ptr<Aws::Http::HttpRequest>
-  CreateHttpRequest(const Aws::String &uri, Aws::Http::HttpMethod method,
-                    const Aws::IOStreamFactory &streamFactory) const override {
-    auto request = Aws::MakeShared<Aws::Http::Standard::StandardHttpRequest>(
-        "StandardHttpRequestAllocationTag", uri, method);
-    request->SetResponseStreamFactory(streamFactory);
-    return request;
-  }
+    if (gShowDemoWindow) {
+        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
+        ImGui::ShowDemoWindow(&gShowDemoWindow);
+    }
 
-  std::shared_ptr<Aws::Http::HttpRequest>
-  CreateHttpRequest(const Aws::Http::URI &uri, Aws::Http::HttpMethod method,
-                    const Aws::IOStreamFactory &streamFactory) const override {
-    auto request = Aws::MakeShared<Aws::Http::Standard::StandardHttpRequest>(
-        "StandardHttpRequestAllocationTag", uri, method);
-    request->SetResponseStreamFactory(streamFactory);
-    return request;
-  }
-};
+    if (gShowPlotDemoWindow) {
+        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
+        ImPlot::ShowDemoWindow(&gShowPlotDemoWindow);
+    }
+
+    sm::Platform::end();
+}
 
 int main(int argc, char **argv) {
-  sm::PlatformCreateInfo createInfo {
-    .title = "AWS C++ WASM",
-    .clear = {0.45f, 0.55f, 0.60f, 1.00f}
-  };
+    sm::PlatformCreateInfo createInfo {
+        .title = "AWS C++ WASM",
+        .clear = {0.45f, 0.55f, 0.60f, 1.00f}
+    };
 
-  if (int err = sm::Platform::setup(createInfo)) {
-    return err;
-  }
+    if (int err = sm::Platform::setup(createInfo)) {
+        return err;
+    }
 
-  sm::aws_init_byo_crypto();
+    sm::aws_init_byo_crypto();
 
-  Aws::SDKOptions options;
-  sm::Platform::configure_aws_sdk_options(options);
+    Aws::SDKOptions options;
+    sm::Platform::configure_aws_sdk_options(options);
 
-  Aws::InitAPI(options);
+    Aws::InitAPI(options);
 
-  std::barrier barrier{2};
+    std::barrier barrier{2};
 
-  std::thread worker([&barrier]() {
-    Aws::Auth::AWSCredentials credentials{
-        "Secret", "Secret"};
+    std::thread worker([&barrier]() {
+        Aws::Auth::AWSCredentials credentials{
+            "Secret", "Secret"};
 
-    auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>(
-        "AwsAllocationTag", credentials);
+        auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>(
+            "AwsAllocationTag", credentials);
 
-    Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-    clientConfigInitValues.shouldDisableIMDS = true;
+        Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
+        clientConfigInitValues.shouldDisableIMDS = true;
 
-    Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{
-        clientConfigInitValues};
-    config.region = "us-east-1";
-    Aws::CloudWatchLogs::CloudWatchLogsClient cwlClient{provider, config};
+        Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{
+            clientConfigInitValues};
+        config.region = "us-east-1";
+        Aws::CloudWatchLogs::CloudWatchLogsClient cwlClient{provider, config};
 
-    Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
-    request.SetLimit(5);
-    g_describeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
+        Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
+        request.SetLimit(5);
+        gDescribeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
+        barrier.arrive_and_wait();
+    });
+
     barrier.arrive_and_wait();
-  });
 
+    sm::Platform::run(loop);
 
-  barrier.arrive_and_wait();
+    sm::Platform::finalize();
 
-  sm::Platform::run(loop);
+    Aws::ShutdownAPI(options);
 
-  sm::Platform::finalize();
-
-  Aws::ShutdownAPI(options);
-
-  return 0;
+    return 0;
 }

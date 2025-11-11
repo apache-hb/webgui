@@ -3,7 +3,8 @@ src = files(
     'imgui_draw.cpp',
     'imgui_tables.cpp',
     'imgui_widgets.cpp',
-    'imgui.cpp'
+    'imgui.cpp',
+    'misc/cpp/imgui_stdlib.cpp',
 )
 
 inc = include_directories('backends', '.')

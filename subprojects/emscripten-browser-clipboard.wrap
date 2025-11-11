@@ -1,0 +1,9 @@
+[wrap-file]
+directory = emscripten-browser-clipboard-bcba48fee22551b458fe5e1e513f6402c810d886
+source_url = https://github.com/Armchair-Software/emscripten-browser-clipboard/archive/bcba48fee22551b458fe5e1e513f6402c810d886.tar.gz
+source_filename = emscripten-browser-clipboard-bcba48fee22551b458fe5e1e513f6402c810d886.tar.gz
+source_hash = ca77bb1b49d53e4088af64f1d32cfb0595a524e39e60a6d403de1c68d00a5aa6
+patch_directory = emscripten-browser-clipboard
+
+[provide]
+dependency_names = emscripten-browser-clipboard
