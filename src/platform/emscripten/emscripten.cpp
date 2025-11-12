@@ -52,6 +52,17 @@ namespace {
         return 0;
     }
 
+    EM_JS(int, is_dark_mode, (), {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 1;
+        }
+        return 0;
+    });
+
+    EM_JS(int, has_touchscreen, (), {
+        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    });
+
     void init_imgui() {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -62,12 +73,7 @@ namespace {
         ImGui_ImplOpenGL3_Init("#version 300 es");
 
         // Setup style
-        bool isDarkMode = EM_ASM_INT({
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                return 1;
-            }
-            return 0;
-        });
+        bool isDarkMode = is_dark_mode();
 
         if (isDarkMode) {
             ImGui::StyleColorsDark();
@@ -80,6 +86,10 @@ namespace {
         io.IniFilename = "/storage/imgui.ini";
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+        if (has_touchscreen()) {
+            io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen;
+        }
 
         // Load Fonts
         io.Fonts->AddFontDefault();

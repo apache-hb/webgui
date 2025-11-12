@@ -13,7 +13,7 @@
 #include <imgui.h>
 #include <implot.h>
 #include <implot3d.h>
-#include <imgui/misc/cpp/imgui_stdlib.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include <aws/core/Region.h>
 #include <aws/core/Aws.h>
