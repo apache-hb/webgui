@@ -1,9 +1,13 @@
 #include <thread>
-#include <barrier>
+#include <chrono>
 #include <stdio.h>
 
+#include "aws/core/client/AWSError.h"
+#include "imgui_internal.h"
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
+
+#include <concurrentqueue.h>
 
 #include <imgui.h>
 #include <implot.h>
@@ -114,107 +118,237 @@ namespace ImAws {
             ImGui::EndCombo();
         }
     }
+
+    template<typename T>
+    void ApiErrorTooltip(const Aws::Client::AWSError<T>& error) {
+
+        // Slight bodge to gain access to protected members
+        using ErrorType = Aws::Client::AWSError<T>;
+        class WrapperError : public ErrorType {
+        public:
+            WrapperError(const ErrorType& rhs)
+                : ErrorType(rhs)
+            {}
+
+            using ErrorType::GetErrorPayloadType;
+            using ErrorType::GetXmlPayload;
+            using ErrorType::GetJsonPayload;
+        };
+
+        WrapperError wrapperError{error};
+
+        ImVec4 errorColour{1.0f, 0.0f, 0.0f, 1.0f};
+
+        float width = ImGui::GetCurrentWindow()->Size.x - ImGui::GetStyle().WindowPadding.x * 2;
+        ImGui::PushTextWrapPos(width);
+        ImGui::TextColored(errorColour, "%s: %s", error.GetExceptionName().c_str(), error.GetMessage().c_str());
+        ImGui::PopTextWrapPos();
+
+        if (ImGui::BeginItemTooltip()) {
+            ImGui::Text("X-Amz-Request-ID: %s", error.GetRequestId().c_str());
+            ImGui::Text("HTTP Status Code: %d", static_cast<int>(error.GetResponseCode()));
+            ImGui::Text("Error Type: %d", static_cast<int>(error.GetErrorType()));
+
+            if (ImGui::BeginTable("Response Headers", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Header");
+                ImGui::TableSetupColumn("Value");
+                ImGui::TableHeadersRow();
+                for (const auto& header : error.GetResponseHeaders()) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(header.first.c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(header.second.c_str());
+                }
+                ImGui::EndTable();
+            }
+
+            auto payloadType = wrapperError.GetErrorPayloadType();
+            if (payloadType == Aws::Client::ErrorPayloadType::NOT_SET) {
+                ImGui::TextUnformatted("No error payload");
+            } else if (payloadType == Aws::Client::ErrorPayloadType::XML) {
+                ImGui::TextUnformatted("XML Payload");
+                auto doc = wrapperError.GetXmlPayload();
+                auto xmlString = doc.ConvertToString();
+                ImGui::TextWrapped("%s", xmlString.c_str());
+            } else if (payloadType == Aws::Client::ErrorPayloadType::JSON) {
+                ImGui::TextUnformatted("JSON Payload");
+                auto json = wrapperError.GetJsonPayload();
+                auto jsonString = json.View().WriteReadable();
+                ImGui::TextWrapped("%s", jsonString.c_str());
+            }
+
+            ImGui::EndTooltip();
+        }
+    }
 }
-
-template<typename T>
-class AsyncValue {
-    T mValue;
-    std::atomic<bool> mIsReady{false};
-
-public:
-    AsyncValue() = default;
-
-    void set_value(const T& value) {
-        mValue = value;
-        mIsReady.store(true);
-    }
-
-    bool is_ready() const {
-        return mIsReady.load();
-    }
-
-    T get_value() const {
-        assert(is_ready());
-        return mValue;
-    }
-
-    void clear() {
-        mIsReady.store(false);
-    }
-};
 
 static std::string gAwsAccessKeyId = "AccessKeyId";
 static std::string gAwsSecretKey = "";
 static AwsRegion gAwsRegion;
 
-static std::unique_ptr<std::jthread> gDescribeLogGroupsThread;
-static std::atomic<bool> gDescribeLogGroupsOutcomePresent = false;
-static Aws::CloudWatchLogs::Model::DescribeLogGroupsOutcome gDescribeLogGroupsOutcome;
+namespace {
+    Aws::CloudWatchLogs::CloudWatchLogsClient create_cwl_client() {
+        Aws::Auth::AWSCredentials credentials{gAwsAccessKeyId, gAwsSecretKey};
+        auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>("AwsAllocationTag", credentials);
+
+        Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
+        clientConfigInitValues.shouldDisableIMDS = true;
+
+        Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{clientConfigInitValues};
+        config.region = gAwsRegion.getSelectedRegionId();
+
+        return Aws::CloudWatchLogs::CloudWatchLogsClient{provider, config};
+    }
+
+    std::string unix_epoch_ms_to_datetime_string(long long epochMs) {
+        std::chrono::system_clock::time_point tp{std::chrono::milliseconds{epochMs}};
+        return std::format("{0:%Y}-{0:%m}-{0:%d}:{0:%H}:{0:%M}:{0:%S}", tp);
+    }
+}
+
+class LogGroupsPanel {
+    using LogGroup = Aws::CloudWatchLogs::Model::LogGroup;
+    using CloudWatchLogsError = Aws::CloudWatchLogs::CloudWatchLogsError;
+
+    enum State {
+        ePanelState_Idle,
+        ePanelState_Fetching,
+    };
+
+    struct LogGroupEntry {
+        uint32_t generation;
+        LogGroup logGroup;
+    };
+
+    std::atomic<State> mState{ePanelState_Idle};
+    uint32_t mGeneration{0};
+
+    std::vector<LogGroup> mLogGroups;
+    std::unique_ptr<std::jthread> mWorkerThread;
+    moodycamel::ConcurrentQueue<LogGroupEntry> mLogGroupQueue;
+
+    std::atomic<bool> mHasError{false};
+    std::optional<CloudWatchLogsError> mLastError;
+
+    ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
+
+    void fetch_all_log_groups(std::stop_token stop) {
+        mState = ePanelState_Fetching;
+
+        auto generation = ++mGeneration;
+
+        auto cwlClient = create_cwl_client();
+
+        Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
+        request.SetLimit(50);
+
+        Aws::String nextToken;
+        do {
+            if (!nextToken.empty()) {
+                request.SetNextToken(nextToken);
+            }
+
+            auto outcome = cwlClient.DescribeLogGroups(request);
+            if (!outcome.IsSuccess()) {
+                mLastError = outcome.GetError();
+                mHasError = true;
+                break;
+            }
+
+            const auto& result = outcome.GetResult();
+            for (const auto& logGroup : result.GetLogGroups()) {
+                mLogGroupQueue.enqueue({generation, logGroup});
+            }
+
+            nextToken = result.GetNextToken();
+        } while (!nextToken.empty() && !stop.stop_requested());
+
+        mState = ePanelState_Idle;
+    }
+
+public:
+    void render() {
+        bool isFetching = mState.load() == ePanelState_Fetching;
+        ImGui::BeginDisabled(isFetching);
+        if (ImGui::Button(isFetching ? "Working..." : "Fetch")) {
+            mLogGroups.clear();
+            mHasError.store(false);
+            mLastError.reset();
+            mWorkerThread.reset(new std::jthread([this](std::stop_token stop) {
+                fetch_all_log_groups(stop);
+            }));
+        }
+        ImGui::EndDisabled();
+
+        if (mHasError.load()) {
+            ImGui::SameLine();
+            ImAws::ApiErrorTooltip(mLastError.value());
+        }
+
+        LogGroupEntry logGroup;
+        if (mLogGroupQueue.try_dequeue(logGroup)) {
+            if (logGroup.generation == mGeneration) {
+                mLogGroups.push_back(logGroup.logGroup);
+            }
+        }
+
+        if (ImGui::BeginTable("Log Groups", 3, mTableFlags)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("ARN", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Creation Time", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+            for (const auto& group : mLogGroups) {
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(group.GetLogGroupName().c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted(group.GetArn().c_str());
+
+                ImGui::TableSetColumnIndex(2);
+                auto time = unix_epoch_ms_to_datetime_string(group.GetCreationTime());
+                ImGui::TextUnformatted(time.c_str());
+            }
+
+            ImGui::EndTable();
+        }
+    }
+};
+
+static LogGroupsPanel gLogGroupsPanel;
 
 void loop() {
     sm::Platform::begin();
 
     ImGui::DockSpaceOverViewport();
 
+    if (ImGui::BeginMainMenuBar()) {
+        ImGui::TextUnformatted("AWS C++ WASM Example");
+        ImGui::Separator();
+
+        if (ImGui::BeginMenu("Windows")) {
+            ImGui::MenuItem("ImGui Demo Window", nullptr, &gShowDemoWindow);
+            ImGui::MenuItem("ImPlot Demo Window", nullptr, &gShowPlotDemoWindow);
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
     if (ImGui::Begin("Aws Credentials")) {
         ImGui::InputText("Access Key ID", &gAwsAccessKeyId);
         ImGui::InputText("Secret Access Key", &gAwsSecretKey, ImGuiInputTextFlags_Password);
         ImAws::RegionCombo("Region", &gAwsRegion);
-
-        if (ImGui::Button("Describe Log Groups")) {
-            // Trigger describe log groups
-            gDescribeLogGroupsThread = std::make_unique<std::jthread>([
-                accessKeyId = gAwsAccessKeyId,
-                secretKey = gAwsSecretKey,
-                region = gAwsRegion.getSelectedRegionId()
-            ] {
-                Aws::Auth::AWSCredentials credentials{accessKeyId, secretKey};
-
-                auto provider = Aws::MakeShared<Aws::Auth::SimpleAWSCredentialsProvider>("AwsAllocationTag", credentials);
-
-                Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-                clientConfigInitValues.shouldDisableIMDS = true;
-
-                Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{clientConfigInitValues};
-                config.region = region;
-
-                Aws::CloudWatchLogs::CloudWatchLogsClient cwlClient{provider, config};
-
-                Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
-                request.SetLimit(5);
-                gDescribeLogGroupsOutcome = cwlClient.DescribeLogGroups(request);
-                gDescribeLogGroupsOutcomePresent = true;
-            });
-        }
-
-        ImGui::End();
     }
 
-    if (gDescribeLogGroupsOutcomePresent) {
-        gDescribeLogGroupsThread.reset();
+    ImGui::End();
 
-        if (ImGui::Begin("Describe Log Groups Outcome")) {
-            if (gDescribeLogGroupsOutcome.IsSuccess()) {
-                const auto& logGroups = gDescribeLogGroupsOutcome.GetResult().GetLogGroups();
-                ImGui::Text("Log Groups:");
-                for (const auto &logGroup : logGroups) {
-                    ImGui::BulletText("%s", logGroup.GetLogGroupName().c_str());
-                }
-            } else {
-                const auto& err = gDescribeLogGroupsOutcome.GetError();
-                ImGui::Text("Exception: %s", err.GetExceptionName().c_str());
-                ImGui::Text("Request ID: %s", err.GetRequestId().c_str());
-                ImGui::Text("Error Message: %s", err.GetMessage().c_str());
-            }
-            ImGui::End();
-        }
+    if (ImGui::Begin("CloudWatch Log Groups")) {
+        gLogGroupsPanel.render();
     }
-
-    if (ImGui::Begin("ImGui Info")) {
-        ImGui::Checkbox("Demo Window", &gShowDemoWindow);
-        ImGui::Checkbox("Plot Demo Window", &gShowPlotDemoWindow);
-        ImGui::End();
-    }
+    ImGui::End();
 
     if (gShowDemoWindow) {
         ImGui::ShowDemoWindow(&gShowDemoWindow);

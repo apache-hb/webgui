@@ -104,27 +104,25 @@ namespace {
             response->SetResponseCode(static_cast<HttpResponseCode>(fetch->status));
             response->SetOriginatingRequest(request);
 
-            if (fetch->status == 200) {
-                size_t headerCount = emscripten_fetch_get_response_headers_length(fetch);
-                std::unique_ptr<char[]> responseHeadersPacked{new char[headerCount + 1]};
-                emscripten_fetch_get_response_headers(fetch, responseHeadersPacked.get(), headerCount + 1);
+            size_t headerCount = emscripten_fetch_get_response_headers_length(fetch);
+            std::unique_ptr<char[]> responseHeadersPacked{new char[headerCount + 1]};
+            emscripten_fetch_get_response_headers(fetch, responseHeadersPacked.get(), headerCount + 1);
 
-                char **responseHeaders = emscripten_fetch_unpack_response_headers(responseHeadersPacked.get());
-                defer { emscripten_fetch_free_unpacked_response_headers(responseHeaders); };
+            char **responseHeaders = emscripten_fetch_unpack_response_headers(responseHeadersPacked.get());
+            defer { emscripten_fetch_free_unpacked_response_headers(responseHeaders); };
 
-                size_t i = 0;
-                while (true) {
-                    char *key = responseHeaders[i++];
-                    if (!key) {
-                        break;
-                    }
-
-                    char *value = responseHeaders[i++];
-                    response->AddHeader(Aws::String(key), Aws::String(value));
+            size_t i = 0;
+            while (true) {
+                char *key = responseHeaders[i++];
+                if (!key) {
+                    break;
                 }
 
-                response->GetResponseBody().write(fetch->data, fetch->numBytes);
+                char *value = responseHeaders[i++];
+                response->AddHeader(Aws::String(key), Aws::String(value));
             }
+
+            response->GetResponseBody().write(fetch->data, fetch->numBytes);
 
             return response;
         }
