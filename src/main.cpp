@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
+#include "util/defer.hpp"
 
 #include <concurrentqueue.h>
 
@@ -116,6 +117,94 @@ namespace ImAws {
                 }
             }
             ImGui::EndCombo();
+        }
+    }
+
+    void ArnTooltip(const Aws::String& arn) {
+        ImGui::TextUnformatted(arn.c_str());
+
+        if (ImGui::BeginItemTooltip()) {
+            defer { ImGui::EndTooltip(); };
+            ImGui::TextUnformatted("Amazon Resource Name (ARN)");
+
+            size_t arnEndIndex = arn.find(':', 0);
+            if (arnEndIndex == Aws::String::npos) {
+                ImGui::TextUnformatted("Invalid ARN");
+                return;
+            }
+
+            size_t partitionEndIndex = arn.find(':', arnEndIndex + 1);
+            if (partitionEndIndex == Aws::String::npos) {
+                ImGui::TextUnformatted("Invalid ARN");
+                return;
+            }
+
+            size_t serviceEndIndex = arn.find(':', partitionEndIndex + 1);
+            if (serviceEndIndex == Aws::String::npos) {
+                ImGui::TextUnformatted("Invalid ARN");
+                return;
+            }
+
+            size_t regionEndIndex = arn.find(':', serviceEndIndex + 1);
+            if (regionEndIndex == Aws::String::npos) {
+                ImGui::TextUnformatted("Invalid ARN");
+                return;
+            }
+
+            size_t accountIdEndIndex = arn.find(':', regionEndIndex + 1);
+            if (accountIdEndIndex == Aws::String::npos) {
+                ImGui::TextUnformatted("Invalid ARN");
+                return;
+            }
+
+            bool hasResoureType = false;
+
+            size_t resourceTypeEndIndex = arn.find_first_of("/:", accountIdEndIndex + 1);
+            if (resourceTypeEndIndex == Aws::String::npos) {
+                resourceTypeEndIndex = arn.length();
+
+                //
+                // Assume no resource type
+                //
+            } else {
+                //
+                // Resource type present
+                //
+
+                size_t nextCharIndex = resourceTypeEndIndex + 1;
+                if (nextCharIndex >= arn.length()) {
+                    ImGui::TextUnformatted("Invalid ARN");
+                    return;
+                }
+
+                hasResoureType = true;
+            }
+
+            std::string_view arnView{arn};
+            std::string_view partition = arnView.substr(arnEndIndex + 1, partitionEndIndex - arnEndIndex - 1);
+            std::string_view service = arnView.substr(partitionEndIndex + 1, serviceEndIndex - partitionEndIndex - 1);
+            std::string_view region = arnView.substr(serviceEndIndex + 1, regionEndIndex - serviceEndIndex - 1);
+            std::string_view accountId = arnView.substr(regionEndIndex + 1, accountIdEndIndex - regionEndIndex - 1);
+
+            ImGui::BulletText("Partition: %.*s", (int)partition.length(), partition.data());
+            ImGui::BulletText("Service: %.*s", (int)service.length(), service.data());
+
+            if (region.empty()) {
+                ImGui::BulletText("Region: global");
+            } else {
+                ImGui::BulletText("Region: %.*s", (int)region.length(), region.data());
+            }
+
+            if (accountId.empty()) {
+                ImGui::BulletText("Account ID: unassociated");
+            } else {
+                ImGui::BulletText("Account ID: %.*s", (int)accountId.length(), accountId.data());
+            }
+
+            if (hasResoureType) {
+                ImGui::BulletText("Resource Type: %.*s", static_cast<int>(resourceTypeEndIndex - accountIdEndIndex - 1), arn.c_str() + accountIdEndIndex + 1);
+            }
+            ImGui::BulletText("Resource ID: %s", arn.c_str() + resourceTypeEndIndex + 1);
         }
     }
 
@@ -305,7 +394,7 @@ public:
                 ImGui::TextUnformatted(group.GetLogGroupName().c_str());
 
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(group.GetArn().c_str());
+                ImAws::ArnTooltip(group.GetArn());
 
                 ImGui::TableSetColumnIndex(2);
                 auto time = unix_epoch_ms_to_datetime_string(group.GetCreationTime());
