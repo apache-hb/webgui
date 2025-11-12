@@ -1,0 +1,10 @@
+[wrap-file]
+directory = implot3d-09fabf6a18095baff3330795264c955c4281833b
+source_filename = implot3d-09fabf6a18095baff3330795264c955c4281833b.tar.gz
+source_url = https://github.com/brenocq/implot3d/archive/09fabf6a18095baff3330795264c955c4281833b.tar.gz
+source_hash = 7102b838426e69049b22c1b4e37fc575ca308163fc79892c4d1426d497069813
+
+patch_directory = implot3d
+
+[provide]
+dependency_names = implot3d

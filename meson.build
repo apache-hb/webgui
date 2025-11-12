@@ -2,8 +2,15 @@ project('webgui', 'cpp',
     default_options: ['cpp_std=c++26'],
 )
 
-subdir('imgui')
-subdir('implot')
+# subdir('imgui')
+# subdir('implot')
+
+imgui_dep = dependency('imgui')
+implot_dep = dependency('implot')
+implot3d_dep = dependency('implot3d')
+
+imgui_backend_glfw_dep = dependency('imgui-backend-glfw')
+imgui_backend_opengl3_dep = dependency('imgui-backend-opengl3')
 
 aws_cpp_sdk_core = dependency('aws-cpp-sdk-core')
 aws_cpp_sdk_logs = dependency('aws-cpp-sdk-logs')
@@ -22,7 +29,9 @@ src = files(
 deps = [
     imgui_dep,
     implot_dep,
-    backend_dep,
+    implot3d_dep,
+    imgui_backend_glfw_dep,
+    imgui_backend_opengl3_dep,
     aws_cpp_sdk_core,
     aws_cpp_sdk_logs,
     aws_cpp_sdk_sts,

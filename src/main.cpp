@@ -12,6 +12,7 @@
 
 #include <imgui.h>
 #include <implot.h>
+#include <implot3d.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <aws/core/Region.h>
@@ -28,6 +29,7 @@
 
 static bool gShowDemoWindow = true;
 static bool gShowPlotDemoWindow = true;
+static bool gShowPlot3dDemoWindow = true;
 
 static constexpr const char *kRegionNames[] = {
     Aws::Region::AF_SOUTH_1,
@@ -420,6 +422,20 @@ void loop() {
         if (ImGui::BeginMenu("Windows")) {
             ImGui::MenuItem("ImGui Demo Window", nullptr, &gShowDemoWindow);
             ImGui::MenuItem("ImPlot Demo Window", nullptr, &gShowPlotDemoWindow);
+            ImGui::MenuItem("ImPlot3D Demo Window", nullptr, &gShowPlot3dDemoWindow);
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Theme")) {
+            if (ImGui::MenuItem("Light")) {
+                ImGui::StyleColorsLight();
+            }
+            if (ImGui::MenuItem("Dark")) {
+                ImGui::StyleColorsDark();
+            }
+            if (ImGui::MenuItem("Classic")) {
+                ImGui::StyleColorsClassic();
+            }
             ImGui::EndMenu();
         }
 
@@ -445,6 +461,10 @@ void loop() {
 
     if (gShowPlotDemoWindow) {
         ImPlot::ShowDemoWindow(&gShowPlotDemoWindow);
+    }
+
+    if (gShowPlot3dDemoWindow) {
+        ImPlot3D::ShowDemoWindow(&gShowPlot3dDemoWindow);
     }
 
     sm::Platform::end();

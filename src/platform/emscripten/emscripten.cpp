@@ -1,10 +1,9 @@
 #include "emscripten.hpp"
+#include "implot3d.h"
 
 #include <emscripten.h>
 
-#include <filesystem>
 #include <stdio.h>
-#include <thread>
 
 #define GLFW_INCLUDE_ES3
 #include <GLES3/gl3.h>
@@ -12,14 +11,13 @@
 
 #include <imgui.h>
 #include <implot.h>
+#include <implot3d.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
 #include <emscripten_browser_clipboard.h>
 
 using sm::Platform_Emscripten;
-
-using namespace std::chrono_literals;
 
 namespace clipboard = emscripten_browser_clipboard;
 
@@ -58,12 +56,24 @@ namespace {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImPlot::CreateContext();
+        ImPlot3D::CreateContext();
         ImGui_ImplGlfw_InitForOpenGL(gWindow, true);
         ImGui_ImplGlfw_InstallEmscriptenCallbacks(gWindow, "#canvas");
         ImGui_ImplOpenGL3_Init("#version 300 es");
 
         // Setup style
-        ImGui::StyleColorsDark();
+        bool isDarkMode = EM_ASM_INT({
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 1;
+            }
+            return 0;
+        });
+
+        if (isDarkMode) {
+            ImGui::StyleColorsDark();
+        } else {
+            ImGui::StyleColorsLight();
+        }
 
         ImGuiIO &io = ImGui::GetIO();
 
@@ -132,6 +142,7 @@ int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
 void Platform_Emscripten::finalize() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImPlot3D::DestroyContext();
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
 

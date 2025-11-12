@@ -1,0 +1,10 @@
+[wrap-file]
+directory = implot-ec7306ceb99d19ff193eb30dc74fa3598f5e7dc6
+source_filename = implot-ec7306ceb99d19ff193eb30dc74fa3598f5e7dc6.tar.gz
+source_url = https://github.com/epezent/implot/archive/ec7306ceb99d19ff193eb30dc74fa3598f5e7dc6.tar.gz
+source_hash = cf4a554b1b887ed2a4b2fbcc2b1375879278da027532603975510a4111aabd71
+
+patch_directory = implot
+
+[provide]
+dependency_names = implot

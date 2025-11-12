@@ -1,0 +1,10 @@
+[wrap-file]
+directory = imgui-1.92.4-docking
+source_filename = imgui-1.92.4-docking.tar.gz
+source_url = https://github.com/ocornut/imgui/archive/refs/tags/v1.92.4-docking.tar.gz
+source_hash = c5e2053afc707c70385431ed85c500b108b521784a3f6a7a31ea17583aab89a2
+
+patch_directory = imgui
+
+[provide]
+dependency_names = imgui, imgui-backend-glfw, imgui-backend-opengl3
