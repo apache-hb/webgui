@@ -7,4 +7,4 @@ source_hash = c5e2053afc707c70385431ed85c500b108b521784a3f6a7a31ea17583aab89a2
 patch_directory = imgui
 
 [provide]
-dependency_names = imgui, imgui-backend-glfw, imgui-backend-opengl3
+dependency_names = imgui, imgui-backend-glfw, imgui-backend-opengl3, imgui-backend-sdl2

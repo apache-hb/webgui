@@ -27,7 +27,8 @@ if host_machine.system() == 'emscripten'
     src = files('backends/imgui_impl_glfw.cpp')
     libimgui_impl_glfw = library('imgui_impl_glfw', src,
         dependencies: imgui_dep,
-        include_directories: inc
+        include_directories: inc,
+        build_by_default: false
     )
     imgui_impl_glfw_dep = declare_dependency(
         include_directories: inc,
@@ -38,11 +39,24 @@ if host_machine.system() == 'emscripten'
     src = files('backends/imgui_impl_opengl3.cpp')
     libimgui_impl_opengl3 = library('imgui_impl_opengl3', src,
         dependencies: imgui_dep,
-        include_directories: inc
+        include_directories: inc,
+        build_by_default: false
     )
     imgui_impl_opengl3_dep = declare_dependency(
         include_directories: inc,
         link_with: libimgui_impl_opengl3
     )
     meson.override_dependency('imgui-backend-opengl3', imgui_impl_opengl3_dep)
+
+    src = files('backends/imgui_impl_sdl2.cpp')
+    libimgui_impl_sdl2 = library('imgui_impl_sdl2', src,
+        dependencies: imgui_dep,
+        include_directories: inc,
+        build_by_default: false
+    )
+    imgui_impl_sdl2_dep = declare_dependency(
+        include_directories: inc,
+        link_with: libimgui_impl_sdl2
+    )
+    meson.override_dependency('imgui-backend-sdl2', imgui_impl_sdl2_dep)
 endif

@@ -299,28 +299,30 @@ else
   c_args += [
     '-Wno-missing-field-initializers',
   ]
-  if compiler.get_id() != 'clang'
+  if compiler.get_id() != 'clang' and compiler.get_id() != 'emscripten'
     c_args += [
       '-Wno-old-style-declaration',
     ]
   endif
 endif
 
-foreach library: openssl_libraries
-  # MSVC fails with "ERROR: C static library 'ws2_32' not found" when `static` is specified at all
-  if compiler.get_id() == 'msvc'
-    dependencies += [
-      compiler.find_library(library),
-    ]
-  else
-    dependencies += [
-      compiler.find_library(
-        library,
-        static: get_option('default_library') == 'static',
-      ),
-    ]
-  endif
-endforeach
+if not is_emscripten
+  foreach library: openssl_libraries
+    # MSVC fails with "ERROR: C static library 'ws2_32' not found" when `static` is specified at all
+    if compiler.get_id() == 'msvc'
+      dependencies += [
+        compiler.find_library(library),
+      ]
+    else
+      dependencies += [
+        compiler.find_library(
+          library,
+          static: get_option('default_library') == 'static',
+        ),
+      ]
+    endif
+  endforeach
+endif
 
 # We may need to add some defines for static builds
 if get_option('default_library') == 'static'
