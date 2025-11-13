@@ -2,8 +2,7 @@ project('webgui', 'cpp',
     default_options: ['cpp_std=c++26'],
 )
 
-# subdir('imgui')
-# subdir('implot')
+cpp = meson.get_compiler('cpp')
 
 imgui_dep = dependency('imgui')
 implot_dep = dependency('implot')
@@ -14,6 +13,7 @@ imgui_backend_opengl3_dep = dependency('imgui-backend-opengl3')
 
 aws_cpp_sdk_core = dependency('aws-cpp-sdk-core')
 aws_cpp_sdk_logs = dependency('aws-cpp-sdk-logs')
+aws_cpp_sdk_iam = dependency('aws-cpp-sdk-iam')
 aws_cpp_sdk_sts = dependency('aws-cpp-sdk-sts')
 aws_cpp_sdk_ecs = dependency('aws-cpp-sdk-ecs')
 libcrypto = dependency('libcrypto')
@@ -23,6 +23,7 @@ inc = include_directories('src')
 
 src = files(
     'src/main.cpp',
+    'src/gui/imaws.cpp',
     'src/platform/aws.cpp'
 )
 
@@ -34,6 +35,7 @@ deps = [
     imgui_backend_opengl3_dep,
     aws_cpp_sdk_core,
     aws_cpp_sdk_logs,
+    aws_cpp_sdk_iam,
     aws_cpp_sdk_sts,
     aws_cpp_sdk_ecs,
     libcrypto,
@@ -57,9 +59,14 @@ else
     error('Unsupported platform: ' + host_machine.system())
 endif
 
+cpp_args = cpp.get_supported_arguments([
+    '-Wno-c99-designator'
+])
+
 executable('gui', src,
     link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]', '-lidbfs.js', '-sASYNCIFY', '-sASYNCIFY_IMPORTS=[emscripten_sleep]'],
     include_directories: inc,
+    cpp_args: cpp_args,
     dependencies: deps,
     install: true,
     install_dir: get_option('datadir'),
