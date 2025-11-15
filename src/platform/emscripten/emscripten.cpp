@@ -8,6 +8,7 @@
 #define GLFW_INCLUDE_ES3
 #include <GLES3/gl3.h>
 #include <GLFW/glfw3.h>
+#include <GLFW/emscripten_glfw3.h>
 
 #include <imgui.h>
 #include <implot.h>
@@ -37,6 +38,8 @@ namespace {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 
+        emscripten::glfw3::SetNextWindowCanvasSelector("#canvas");
+
         // Open a window and create its OpenGL context.
         // The window is created with minimal size,
         // which will be updated with an automatic resize.
@@ -47,6 +50,9 @@ namespace {
             glfwTerminate();
             return -1;
         }
+
+        emscripten::glfw3::MakeCanvasResizable(gWindow, "window");
+
         glfwMakeContextCurrent(gWindow); // Initialize GLEW
 
         return 0;
@@ -114,9 +120,9 @@ namespace {
         pio.Platform_SetClipboardTextFn = set_clipboard_imgui_adapter;
     }
 
-    EM_JS(bool, has_storage_mounted, (), {
-        return !!Module.storage;
-    });
+    // EM_JS(bool, has_storage_mounted, (), {
+    //     return !!Module.storage;
+    // });
 }
 
 int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
@@ -124,22 +130,20 @@ int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
         FS.mkdir('/storage');
         FS.mount(IDBFS, {autoPersist: true}, '/storage');
 
-        FS.syncfs(true, function (err) {
-            Module.storage = true;
-        });
+        // FS.syncfs(true);
     );
 
     if (int res = init_glfw(createInfo.title.c_str())) {
         return res;
     }
 
-    // We don't want to wait forever, so limit to 5 attempts
-    size_t limit = 5;
-    while (!has_storage_mounted() && limit-- > 0) {
-        printf("Waiting for filesystem to be mounted...\n");
-        // Wait for the filesystem to be mounted
-        emscripten_sleep(10);
-    }
+    // // We don't want to wait forever, so limit to 5 attempts
+    // size_t limit = 5;
+    // while (!has_storage_mounted() && limit-- > 0) {
+    //     printf("Waiting for filesystem to be mounted...\n");
+    //     // Wait for the filesystem to be mounted
+    //     emscripten_sleep(10);
+    // }
 
     init_imgui();
     init_clipboard();

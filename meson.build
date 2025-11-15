@@ -64,9 +64,9 @@ cpp_args = cpp.get_supported_arguments([
 ])
 
 executable('gui', src,
-    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]', '-lidbfs.js', '-sASYNCIFY', '-sASYNCIFY_IMPORTS=[emscripten_sleep]'],
+    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]', '--use-port=contrib.glfw3', '-lidbfs.js'],
     include_directories: inc,
-    cpp_args: cpp_args,
+    cpp_args: cpp_args + [ '--use-port=contrib.glfw3' ],
     dependencies: deps,
     install: true,
     install_dir: get_option('datadir'),

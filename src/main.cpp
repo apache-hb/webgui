@@ -302,7 +302,7 @@ public:
                 ImGui::TableNextRow();
 
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Selectable(role.GetRoleName().c_str(), false);
+                ImGui::TextUnformatted(role.GetRoleName().c_str());
 
                 ImGui::TableSetColumnIndex(1);
                 ImAws::ArnTooltip(role.GetArn());

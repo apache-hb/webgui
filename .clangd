@@ -6,5 +6,6 @@ If:
   PathMatch: .*\.cpp
 
 CompileFlags:
-  Add: [-target, wasm32-unknown-emscripten, -fignore-exceptions, -mllvm, -combiner-global-alias-analysis=false, -mllvm, -enable-emscripten-sjlj, -mllvm, -disable-lsr, --sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -DEMSCRIPTEN, -Xclang, -iwithsysroot/include/fakesdl, -Xclang, -iwithsysroot/include/compat]
+  Add: [-target, wasm32-unknown-emscripten, -fignore-exceptions, -mllvm, -combiner-global-alias-analysis=false, -mllvm, -enable-emscripten-sjlj, -mllvm, -disable-lsr, --sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -DEMSCRIPTEN, -Xclang, -iwithsysroot/include/compat, -Xclang, -isystem/home/elliothb/emsdk/upstream/emscripten/cache/ports/contrib.glfw3/include]
   Compiler: /home/elliothb/emsdk/upstream/emscripten/em++
+  Remove: [--use-port=contrib.glfw3]
