@@ -64,7 +64,14 @@ cpp_args = cpp.get_supported_arguments([
 ])
 
 executable('gui', src,
-    link_args: ['-lGL', '-sFETCH', '-sEXPORTED_RUNTIME_METHODS=[ccall]', '--use-port=contrib.glfw3', '-lidbfs.js'],
+    link_args: [
+        '-lGL',
+        '-sFETCH',
+        '-sEXPORTED_RUNTIME_METHODS=[ccall]',
+        '--use-port=contrib.glfw3',
+        '-lidbfs.js',
+        '--pre-js', join_paths(meson.project_source_root(), 'assets', 'pre.js')
+    ],
     include_directories: inc,
     cpp_args: cpp_args + [ '--use-port=contrib.glfw3' ],
     dependencies: deps,

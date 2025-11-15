@@ -119,31 +119,12 @@ namespace {
         pio.Platform_GetClipboardTextFn = get_clipboard_imgui_adapter;
         pio.Platform_SetClipboardTextFn = set_clipboard_imgui_adapter;
     }
-
-    // EM_JS(bool, has_storage_mounted, (), {
-    //     return !!Module.storage;
-    // });
 }
 
 int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
-    EM_ASM(
-        FS.mkdir('/storage');
-        FS.mount(IDBFS, {autoPersist: true}, '/storage');
-
-        // FS.syncfs(true);
-    );
-
     if (int res = init_glfw(createInfo.title.c_str())) {
         return res;
     }
-
-    // // We don't want to wait forever, so limit to 5 attempts
-    // size_t limit = 5;
-    // while (!has_storage_mounted() && limit-- > 0) {
-    //     printf("Waiting for filesystem to be mounted...\n");
-    //     // Wait for the filesystem to be mounted
-    //     emscripten_sleep(10);
-    // }
 
     init_imgui();
     init_clipboard();
