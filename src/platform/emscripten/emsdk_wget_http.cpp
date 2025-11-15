@@ -151,7 +151,7 @@ namespace {
     };
 }
 
-void Platform_Emscripten::configure_aws_sdk_options(Aws::SDKOptions& options) {
+void Platform_Emscripten::configureAwsSdkOptions(Aws::SDKOptions& options) {
     options.httpOptions.httpClientFactory_create_fn = [] {
         return Aws::MakeShared<EmsdkWgetClientFactory>("EmsdkWgetClientFactoryAllocationTag");
     };

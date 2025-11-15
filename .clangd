@@ -3,7 +3,7 @@ Diagnostics:
     Remove: [modernize-*, readability-*, performance-*, misc-*]
 
 If:
-  PathMatch: .*\.cpp
+  PathMatch: .*\.(cpp|c|cc|cxx|h|hpp|hh|hxx)$
 
 CompileFlags:
   Add: [-target, wasm32-unknown-emscripten, -fignore-exceptions, -mllvm, -combiner-global-alias-analysis=false, -mllvm, -enable-emscripten-sjlj, -mllvm, -disable-lsr, --sysroot=/home/elliothb/emsdk/upstream/emscripten/cache/sysroot, -DEMSCRIPTEN, -Xclang, -iwithsysroot/include/compat, -Xclang, -isystem/home/elliothb/emsdk/upstream/emscripten/cache/ports/contrib.glfw3/include]

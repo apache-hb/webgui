@@ -2,6 +2,7 @@
 #include "util/defer.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <aws/core/Region.h>
@@ -192,36 +193,43 @@ void ImAws::detail::ApiErrorTooltipImpl(
     ImGui::TextColored(errorColour, "%s: %s", exceptionName, message);
     ImGui::PopTextWrapPos();
 
-    if (ImGui::BeginItemTooltip()) {
-        ImGui::Text("X-Amz-Request-ID: %s", xAmzRequestId);
-        ImGui::Text("HTTP Status Code: %d", httpStatusCode);
-        ImGui::Text("Error Type: %d", errorType);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
+        ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
+        if (ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("X-Amz-Request-ID: %s", xAmzRequestId);
+            ImGui::Text("HTTP Status Code: %d", httpStatusCode);
+            ImGui::Text("Error Type: %d", errorType);
 
-        if (ImGui::BeginTable("Response Headers", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-            ImGui::TableSetupColumn("Header");
-            ImGui::TableSetupColumn("Value");
-            ImGui::TableHeadersRow();
-            for (const auto& header : headers) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(header.first.c_str());
-                ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(header.second.c_str());
+            if (ImGui::BeginTable("Response Headers", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Header");
+                ImGui::TableSetupColumn("Value");
+                ImGui::TableHeadersRow();
+
+                for (const auto& header : headers) {
+                    ImGui::TableNextRow();
+
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(header.first.c_str());
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(header.second.c_str());
+                }
+
+                ImGui::EndTable();
             }
-            ImGui::EndTable();
-        }
 
-        if (xmlPayload.empty() && jsonPayload.empty()) {
-            ImGui::TextUnformatted("No error payload");
-        } else if (!xmlPayload.empty()) {
-            ImGui::TextUnformatted("XML Payload");
-            ImGui::TextWrapped("%s", xmlPayload.c_str());
-        } else if (!jsonPayload.empty()) {
-            ImGui::TextUnformatted("JSON Payload");
-            ImGui::TextWrapped("%s", jsonPayload.c_str());
-        }
+            if (xmlPayload.empty() && jsonPayload.empty()) {
+                ImGui::TextUnformatted("No error payload");
+            } else if (!xmlPayload.empty()) {
+                ImGui::SeparatorText("XML");
+                ImGui::TextWrapped("%s", xmlPayload.c_str());
+            } else if (!jsonPayload.empty()) {
+                ImGui::SeparatorText("JSON");
+                ImGui::TextWrapped("%s", jsonPayload.c_str());
+            }
 
-        ImGui::EndTooltip();
+            ImGui::EndTooltip();
+        }
     }
 }
 

@@ -18,13 +18,16 @@ aws_cpp_sdk_sts = dependency('aws-cpp-sdk-sts')
 aws_cpp_sdk_ecs = dependency('aws-cpp-sdk-ecs')
 libcrypto = dependency('libcrypto')
 concurrentqueue = dependency('concurrentqueue')
+sqlite3_dep = dependency('sqlite3')
 
 inc = include_directories('src')
 
 src = files(
     'src/main.cpp',
     'src/gui/imaws.cpp',
-    'src/platform/aws.cpp'
+    'src/gui/aws/session.cpp',
+    'src/gui/aws/window.cpp',
+    'src/platform/aws.cpp',
 )
 
 deps = [
@@ -39,7 +42,8 @@ deps = [
     aws_cpp_sdk_sts,
     aws_cpp_sdk_ecs,
     libcrypto,
-    concurrentqueue
+    concurrentqueue,
+    sqlite3_dep,
 ]
 
 if host_machine.system() == 'windows'

@@ -9,6 +9,6 @@ namespace sm {
         static void run(void (*fn)());
         static void begin();
         static void end();
-        static void configure_aws_sdk_options(Aws::SDKOptions& options);
+        static void configureAwsSdkOptions(Aws::SDKOptions& options);
     };
 }

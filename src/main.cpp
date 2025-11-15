@@ -1,11 +1,12 @@
-#include <span>
-#include <thread>
 #include <chrono>
 #include <stdio.h>
 
+#include "gui/aws/session.hpp"
+#include "gui/aws/window.hpp"
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
 #include "gui/imaws.hpp"
+#include "util/describe.hpp"
 
 #include <concurrentqueue.h>
 
@@ -38,6 +39,8 @@ static ImAws::AwsRegion gAwsRegion;
 static ImAws::AwsCredentialState gAwsCredentials;
 
 namespace {
+    std::vector<std::unique_ptr<ImAws::Session>> gSessions;
+
     Aws::CloudWatchLogs::CloudWatchLogsClient createCwlClient() {
         auto provider = gAwsCredentials.createProvider();
 
@@ -68,104 +71,11 @@ namespace {
     }
 }
 
-enum class AsyncDescribeState {
-    eIdle,
-    eFetching,
-};
-
-template<typename T, typename E>
-class AsyncDescribe {
-    struct Entry {
-        uint32_t generation;
-        T item;
-    };
-
-    std::atomic<AsyncDescribeState> mState;
-    uint32_t mGeneration;
-
-    std::vector<T> mItems;
-    std::unique_ptr<std::jthread> mWorkerThread;
-    moodycamel::ConcurrentQueue<Entry> mItemQueue;
-
-    std::atomic<bool> mHasError{false};
-    std::optional<E> mLastError;
-
-    void reset() {
-        mItems.clear();
-        mHasError.store(false);
-        mLastError.reset();
-        if (mWorkerThread) {
-            mWorkerThread->request_stop();
-        }
-    }
-
-    void pullItem() {
-        Entry entry;
-        if (mItemQueue.try_dequeue(entry)) {
-            if (entry.generation == mGeneration) {
-                mItems.push_back(entry.item);
-            }
-        }
-    }
-
-public:
-    AsyncDescribe()
-        : mState(AsyncDescribeState::eIdle)
-        , mGeneration(0)
-    { }
-
-    bool isWorking() const {
-        return mState.load() == AsyncDescribeState::eFetching;
-    }
-
-    bool hasError() const {
-        return mHasError.load();
-    }
-
-    E error() const {
-        assert(hasError());
-        return mLastError.value();
-    }
-
-    std::span<const T> getItems() {
-        pullItem();
-        return mItems;
-    }
-
-    void fail(E error) {
-        mLastError = std::move(error);
-        mHasError.store(true);
-    }
-
-    template<typename F>
-    void run(F&& fn) {
-        reset();
-
-        mWorkerThread.reset(new std::jthread([this, fn = std::forward<F>(fn)](std::stop_token stop) {
-            mState = AsyncDescribeState::eFetching;
-
-            auto generation = ++mGeneration;
-
-            auto add = [this, generation](T item) {
-                mItemQueue.enqueue({generation, std::move(item)});
-            };
-
-            auto err = [this](E error) {
-                fail(std::move(error));
-            };
-
-            fn(add, err, stop);
-
-            mState = AsyncDescribeState::eIdle;
-        }));
-    }
-};
-
 class LogGroupsPanel {
     using LogGroup = Aws::CloudWatchLogs::Model::LogGroup;
     using CwlError = Aws::CloudWatchLogs::CloudWatchLogsError;
 
-    AsyncDescribe<LogGroup, CwlError> mLogGroupDescribe;
+    sm::AsyncDescribe<LogGroup, CwlError> mLogGroupDescribe;
 
     ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
 
@@ -243,7 +153,7 @@ class IamRolesPanel {
     using Role = Aws::IAM::Model::Role;
     using IamError = Aws::IAM::IAMError;
 
-    AsyncDescribe<Role, IamError> mRoleDescribe;
+    sm::AsyncDescribe<Role, IamError> mRoleDescribe;
 
     ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
 
@@ -335,6 +245,13 @@ void loop() {
         ImGui::TextUnformatted("AWS C++ WASM Example");
         ImGui::Separator();
 
+        if (ImGui::BeginMenu("Sessions")) {
+            for (auto& session : gSessions) {
+                ImAws::SessionMenu(*session);
+            }
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("Windows")) {
             ImGui::MenuItem("ImGui Demo Window", nullptr, &gShowDemoWindow);
             ImGui::MenuItem("ImPlot Demo Window", nullptr, &gShowPlotDemoWindow);
@@ -373,6 +290,10 @@ void loop() {
         ImGui::Text("C++ Standard: %s", Aws::Version::GetCPPStandard());
     }
     ImGui::End();
+
+    for (auto& session : gSessions) {
+        session->draw();
+    }
 
     if (gShowIamRolesWindow) {
         if (ImGui::Begin("IAM", &gShowIamRolesWindow)) {
@@ -416,15 +337,18 @@ int main(int argc, char **argv) {
     sm::aws_init_byo_crypto();
 
     Aws::SDKOptions options;
-    sm::Platform::configure_aws_sdk_options(options);
+    sm::Platform::configureAwsSdkOptions(options);
 
     Aws::InitAPI(options);
 
-    sm::Platform::run(loop);
-
-    sm::Platform::finalize();
+    {
+        gSessions.push_back(std::make_unique<ImAws::Session>(1));
+        sm::Platform::run(loop);
+    }
 
     Aws::ShutdownAPI(options);
+
+    sm::Platform::finalize();
 
     return 0;
 }
