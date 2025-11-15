@@ -203,27 +203,16 @@ namespace {
         }
         return escaped;
     }
-}
 
-void ImAws::detail::ApiErrorTooltipImpl(
-    const char *xAmzRequestId,
-    int httpStatusCode,
-    int errorType,
-    const char *exceptionName,
-    const char *message,
-    const Aws::Http::HeaderValueCollection& headers,
-    const Aws::String& xmlPayload,
-    const Aws::String& jsonPayload
-) {
-    ImVec4 errorColour{1.0f, 0.0f, 0.0f, 1.0f};
-
-    float width = ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x * 2;
-    ImGui::PushTextWrapPos(width);
-    ImGui::TextColored(errorColour, "%s: %s", exceptionName, message);
-    ImGui::PopTextWrapPos();
-
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-
+    std::string formatErrorText(
+        int httpStatusCode,
+        int errorType,
+        const char *exceptionName,
+        const char *message,
+        const Aws::Http::HeaderValueCollection& headers,
+        const Aws::String& xmlPayload,
+        const Aws::String& jsonPayload
+    ) {
         std::stringstream ss;
         ss << std::format("[{}]\n", exceptionName);
         ss << std::format("status = {}\n", httpStatusCode);
@@ -248,7 +237,38 @@ void ImAws::detail::ApiErrorTooltipImpl(
             ss << std::format("json = \"{}\"\n", escapeText(jsonPayload));
         }
 
-        ImGui::SetClipboardText(ss.str().c_str());
+        return ss.str();
+    }
+}
+
+void ImAws::detail::ApiErrorTooltipImpl(
+    const char *xAmzRequestId,
+    int httpStatusCode,
+    int errorType,
+    const char *exceptionName,
+    const char *message,
+    const Aws::Http::HeaderValueCollection& headers,
+    const Aws::String& xmlPayload,
+    const Aws::String& jsonPayload
+) {
+    ImVec4 errorColour{1.0f, 0.0f, 0.0f, 1.0f};
+
+    float width = ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x * 2;
+    ImGui::PushTextWrapPos(width);
+    ImGui::TextColored(errorColour, "%s: %s", exceptionName, message);
+    ImGui::PopTextWrapPos();
+
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+        auto text = formatErrorText(
+            httpStatusCode,
+            errorType,
+            exceptionName,
+            message,
+            headers,
+            xmlPayload,
+            jsonPayload
+        );
+        ImGui::SetClipboardText(text.c_str());
     }
 
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {

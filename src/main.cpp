@@ -230,8 +230,9 @@ public:
 static bool gShowDemoWindow = true;
 static bool gShowPlotDemoWindow = true;
 static bool gShowPlot3dDemoWindow = true;
-static bool gShowIamRolesWindow = true;
-static bool gShowLogGroupsWindow = true;
+static bool gShowIamRolesWindow = false;
+static bool gShowLogGroupsWindow = false;
+static bool gShowAwsSdkInfoWindow = false;
 
 static IamRolesPanel gIamRolesPanel;
 static LogGroupsPanel gLogGroupsPanel;
@@ -256,6 +257,7 @@ void loop() {
             ImGui::MenuItem("ImGui Demo Window", nullptr, &gShowDemoWindow);
             ImGui::MenuItem("ImPlot Demo Window", nullptr, &gShowPlotDemoWindow);
             ImGui::MenuItem("ImPlot3D Demo Window", nullptr, &gShowPlot3dDemoWindow);
+            ImGui::MenuItem("AWS SDK Info", nullptr, &gShowAwsSdkInfoWindow);
             ImGui::MenuItem("IAM Roles", nullptr, &gShowIamRolesWindow);
             ImGui::MenuItem("CloudWatch Log Groups", nullptr, &gShowLogGroupsWindow);
             ImGui::EndMenu();
@@ -284,12 +286,14 @@ void loop() {
     }
     ImGui::End();
 
-    if (ImGui::Begin("AWS SDK Info")) {
-        ImGui::Text("AWS SDK Version: %s", Aws::Version::GetVersionString());
-        ImGui::Text("Compiler: %s", Aws::Version::GetCompilerVersionString());
-        ImGui::Text("C++ Standard: %s", Aws::Version::GetCPPStandard());
+    if (gShowAwsSdkInfoWindow) {
+        if (ImGui::Begin("AWS SDK Info", &gShowAwsSdkInfoWindow)) {
+            ImGui::Text("AWS SDK Version: %s", Aws::Version::GetVersionString());
+            ImGui::Text("Compiler: %s", Aws::Version::GetCompilerVersionString());
+            ImGui::Text("C++ Standard: %s", Aws::Version::GetCPPStandard());
+        }
+        ImGui::End();
     }
-    ImGui::End();
 
     for (auto& session : gSessions) {
         session->draw();
@@ -334,7 +338,7 @@ int main(int argc, char **argv) {
         return err;
     }
 
-    sm::aws_init_byo_crypto();
+    sm::initAwsByoCrypto();
 
     Aws::SDKOptions options;
     sm::Platform::configureAwsSdkOptions(options);

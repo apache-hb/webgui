@@ -28,7 +28,7 @@ namespace {
     std::array<float, 4> gClearColour{};
     std::string gClipboardContent;
 
-    int init_glfw(const char *title) {
+    int initGlfw(const char *title) {
         if (!glfwInit()) {
             fprintf(stderr, "Failed to initialize GLFW\n");
             return 1;
@@ -59,14 +59,14 @@ namespace {
         return 0;
     }
 
-    EM_JS(int, is_dark_mode, (), {
+    EM_JS(int, isDarkMode, (), {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             return 1;
         }
         return 0;
     });
 
-    EM_JS(int, has_touchscreen, (), {
+    EM_JS(int, hasTouchScreen, (), {
         return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     });
 
@@ -80,9 +80,7 @@ namespace {
         ImGui_ImplOpenGL3_Init("#version 300 es");
 
         // Setup style
-        bool isDarkMode = is_dark_mode();
-
-        if (isDarkMode) {
+        if (isDarkMode()) {
             ImGui::StyleColorsDark();
         } else {
             ImGui::StyleColorsLight();
@@ -99,7 +97,7 @@ namespace {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-        if (has_touchscreen()) {
+        if (hasTouchScreen()) {
             io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen;
         }
 
@@ -107,33 +105,33 @@ namespace {
         io.Fonts->AddFontDefault();
     }
 
-    const char *get_clipboard_imgui_adapter(ImGuiContext *ctx) {
+    const char *getClipboardImguiAdapter(ImGuiContext *ctx) {
         return gClipboardContent.c_str();
     }
 
-    void set_clipboard_imgui_adapter(ImGuiContext *ctx, const char *text) {
+    void setClipboardImguiAdapter(ImGuiContext *ctx, const char *text) {
         gClipboardContent = text;
         clipboard::copy(gClipboardContent);
     }
 
-    void init_clipboard() {
+    void initClipboard() {
         clipboard::paste([](std::string&& pasted, [[maybe_unused]] void *user) {
             gClipboardContent = std::move(pasted);
         }, nullptr);
 
         ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
-        pio.Platform_GetClipboardTextFn = get_clipboard_imgui_adapter;
-        pio.Platform_SetClipboardTextFn = set_clipboard_imgui_adapter;
+        pio.Platform_GetClipboardTextFn = getClipboardImguiAdapter;
+        pio.Platform_SetClipboardTextFn = setClipboardImguiAdapter;
     }
 }
 
 int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
-    if (int res = init_glfw(createInfo.title.c_str())) {
+    if (int res = initGlfw(createInfo.title.c_str())) {
         return res;
     }
 
     init_imgui();
-    init_clipboard();
+    initClipboard();
 
     gClearColour = createInfo.clear;
 

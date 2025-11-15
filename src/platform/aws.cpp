@@ -284,7 +284,7 @@ public:
     }
 };
 
-void sm::aws_init_byo_crypto() {
+void sm::initAwsByoCrypto() {
     OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
 
     auto alloc = aws_default_allocator();
