@@ -176,6 +176,35 @@ void ImAws::ArnTooltip(const Aws::String& arn) {
     }
 }
 
+namespace {
+    std::string escapeText(std::string_view text) {
+        std::string escaped;
+        for (char c : text) {
+            switch (c) {
+            case '\n':
+                escaped += "\\n";
+                break;
+            case '\r':
+                escaped += "\\r";
+                break;
+            case '\t':
+                escaped += "\\t";
+                break;
+            case '\"':
+                escaped += "\\\"";
+                break;
+            case '\\':
+                escaped += "\\\\";
+                break;
+            default:
+                escaped += c;
+                break;
+            }
+        }
+        return escaped;
+    }
+}
+
 void ImAws::detail::ApiErrorTooltipImpl(
     const char *xAmzRequestId,
     int httpStatusCode,
@@ -193,10 +222,39 @@ void ImAws::detail::ApiErrorTooltipImpl(
     ImGui::TextColored(errorColour, "%s: %s", exceptionName, message);
     ImGui::PopTextWrapPos();
 
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+
+        std::stringstream ss;
+        ss << std::format("[{}]\n", exceptionName);
+        ss << std::format("status = {}\n", httpStatusCode);
+        ss << std::format("type = {}\n", errorType);
+        ss << std::format("message = \"{}\"\n", escapeText(message));
+        ss << "headers = {\n";
+        for (auto it = headers.begin(); it != headers.end(); ++it) {
+            const auto& header = *it;
+            ss << std::format("  {} = \"{}\"", header.first, escapeText(header.second));
+            if (std::next(it) != headers.end()) {
+                ss << ",";
+            }
+            ss << "\n";
+        }
+        ss << "}\n";
+
+        if (!xmlPayload.empty()) {
+            ss << std::format("xml = \"{}\"\n", escapeText(xmlPayload));
+        }
+
+        if (!jsonPayload.empty()) {
+            ss << std::format("json = \"{}\"\n", escapeText(jsonPayload));
+        }
+
+        ImGui::SetClipboardText(ss.str().c_str());
+    }
+
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
         ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
         if (ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("X-Amz-Request-ID: %s", xAmzRequestId);
+            ImGui::Text("X-Amz-RequestId: %s", xAmzRequestId);
             ImGui::Text("HTTP Status Code: %d", httpStatusCode);
             ImGui::Text("Error Type: %d", errorType);
 

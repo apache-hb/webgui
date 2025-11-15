@@ -3,6 +3,7 @@
 
 #include <emscripten.h>
 
+#include <filesystem>
 #include <stdio.h>
 
 #define GLFW_INCLUDE_ES3
@@ -88,6 +89,11 @@ namespace {
         }
 
         ImGuiIO &io = ImGui::GetIO();
+
+        if (std::filesystem::exists("/fonts/")) {
+            io.Fonts->ClearFonts();
+            io.Fonts->AddFontFromFileTTF("/fonts/DroidSans.ttf", 13.f);
+        }
 
         io.IniFilename = "/storage/imgui.ini";
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;

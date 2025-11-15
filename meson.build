@@ -67,6 +67,8 @@ cpp_args = cpp.get_supported_arguments([
     '-Wno-c99-designator'
 ])
 
+root = meson.project_source_root()
+
 executable('gui', src,
     link_args: [
         '-lGL',
@@ -74,7 +76,8 @@ executable('gui', src,
         '-sEXPORTED_RUNTIME_METHODS=[ccall]',
         '--use-port=contrib.glfw3',
         '-lidbfs.js',
-        '--pre-js', join_paths(meson.project_source_root(), 'assets', 'pre.js')
+        '--pre-js', join_paths(root, 'assets', 'pre.js'),
+        '--preload-file', join_paths(root, 'assets', 'fonts') + '@/fonts',
     ],
     include_directories: inc,
     cpp_args: cpp_args + [ '--use-port=contrib.glfw3' ],
@@ -84,3 +87,4 @@ executable('gui', src,
 )
 
 install_data('assets/index.html', install_dir: get_option('datadir'))
+install_data(meson.project_build_root() / 'gui.data', install_dir: get_option('datadir'))
