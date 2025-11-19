@@ -176,6 +176,10 @@ void ImAws::ArnTooltip(const Aws::String& arn) {
     }
 }
 
+ImAws::WindowHandle ImAws::Begin(const char *name, bool *p_open, ImGuiWindowFlags flags) {
+    return WindowHandle{ImGui::Begin(name, p_open, flags)};
+}
+
 namespace {
     std::string escapeText(std::string_view text) {
         std::string escaped;

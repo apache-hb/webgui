@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aws/core/auth/AWSCredentials.h"
+#include "aws/core/auth/AWSCredentialsProvider.h"
 #include <string>
 
 namespace ImAws {
@@ -14,6 +16,9 @@ namespace ImAws {
 
     protected:
         void setTitle(std::string title);
+
+        std::shared_ptr<Aws::Auth::AWSCredentialsProvider> getSessionCredentialsProvider() const;
+        std::string getSessionRegion() const;
 
     public:
         virtual ~IWindow() = default;

@@ -1,73 +1,45 @@
 #include "session.hpp"
+#include "gui/aws/windows/cwl.hpp"
+#include "gui/aws/windows/iam.hpp"
 #include "window.hpp"
+
+#include "gui/imaws.hpp"
 
 #include <imgui.h>
 
 #include <aws/sts/STSClient.h>
 
-ImAws::Session::Session(int id)
-    : mLoggedIn(false)
-    , mSessionTitle(std::format("Session {}", id))
+ImAws::Session::Session(SessionInfo info)
+    : mInfo(std::move(info))
 { }
 
-void ImAws::Session::draw() {
-    if (!mLoggedIn) {
-        if (mCallerIdentity.isComplete()) {
-            auto outcome = mCallerIdentity.getResult();
-            if (outcome.IsSuccess()) {
-                mLoggedIn = true;
-                auto result = outcome.GetResult();
-                mSessionTitle = std::format("Session - {} ({})",
-                                            result.GetArn(),
-                                            result.GetAccount());
-            } else {
-                ImGui::OpenPopup("Login Failed");
-            }
+void ImAws::Session::drawSessionInfo() {
+    if (auto _ = ImAws::Begin(mInfo.title.c_str())) {
+        ImGui::Text("Account: %s", mInfo.callerIdentity.GetAccount().c_str());
+        ImGui::Text("UserId: %s", mInfo.callerIdentity.GetUserId().c_str());
+        ImGui::Text("ARN: %s", mInfo.callerIdentity.GetArn().c_str());
 
-            if (ImGui::BeginPopupModal("Login Failed")) {
-                ImAws::ApiErrorTooltip(outcome.GetError());
-                if (ImGui::Button("OK")) {
-                    mCallerIdentity.clear();
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndPopup();
-            }
+        if (ImGui::Button("CloudWatch Logs")) {
+            mWindows.push_back(std::make_unique<ImAws::CloudWatchLogsPanel>(this, "CloudWatch Logs"));
         }
 
-        if (ImGui::Begin("Login")) {
-            ImAws::RegionCombo("##Region", &mRegion, ImGuiComboFlags_WidthFitPreview);
-            ImGui::SameLine();
-            ImAws::InputCredentials(&mCredentials);
-
-            ImGui::BeginDisabled(mCallerIdentity.isWorking());
-            const char *label = mCallerIdentity.isWorking() ? "Logging in..." : "Login";
-            if (ImGui::Button(label)) {
-                mCallerIdentity.run([this, provider = mCredentials.createProvider()]() {
-                    Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-                    clientConfigInitValues.shouldDisableIMDS = true;
-
-                    Aws::STS::STSClientConfiguration config{clientConfigInitValues};
-                    config.region = mRegion.getSelectedRegionId();
-
-                    Aws::STS::STSClient stsClient{provider, config};
-                    return stsClient.GetCallerIdentity({});
-                });
-            }
-            ImGui::EndDisabled();
+        if (ImGui::Button("IAM")) {
+            mWindows.push_back(std::make_unique<ImAws::IamPanel>(this, "IAM"));
         }
-
-        ImGui::End();
-        return;
     }
+}
+
+void ImAws::Session::draw() {
+    drawSessionInfo();
 
     for (auto& window : mWindows) {
         window->drawWindow();
     }
 }
 
-void ImAws::SessionMenu(Session& session) {
-    ImGui::SeparatorText(session.mSessionTitle.c_str());
-    for (auto& window : session.mWindows) {
+void ImAws::Session::drawMenu() {
+    ImGui::SeparatorText(mInfo.title.c_str());
+    for (auto& window : mWindows) {
         ImAws::WindowMenuItem(*window);
     }
 }

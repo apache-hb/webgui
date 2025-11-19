@@ -1,12 +1,13 @@
-#include <chrono>
 #include <stdio.h>
 
+#include "aws/sts/STSClient.h"
+#include "aws/sts/model/GetCallerIdentityResult.h"
 #include "gui/aws/session.hpp"
 #include "gui/aws/window.hpp"
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
 #include "gui/imaws.hpp"
-#include "util/describe.hpp"
+#include "util/async.hpp"
 
 #include <concurrentqueue.h>
 
@@ -34,208 +35,99 @@
 #include <aws/iam/model/ListRolesRequest.h>
 #include <aws/iam/model/ListPoliciesRequest.h>
 
-
-static ImAws::AwsRegion gAwsRegion;
-static ImAws::AwsCredentialState gAwsCredentials;
-
 namespace {
     std::vector<std::unique_ptr<ImAws::Session>> gSessions;
-
-    Aws::CloudWatchLogs::CloudWatchLogsClient createCwlClient() {
-        auto provider = gAwsCredentials.createProvider();
-
-        Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-        clientConfigInitValues.shouldDisableIMDS = true;
-
-        Aws::CloudWatchLogs::CloudWatchLogsClientConfiguration config{clientConfigInitValues};
-        config.region = gAwsRegion.getSelectedRegionId();
-
-        return Aws::CloudWatchLogs::CloudWatchLogsClient{provider, config};
-    }
-
-    Aws::IAM::IAMClient createIamClient() {
-        auto provider = gAwsCredentials.createProvider();
-
-        Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-        clientConfigInitValues.shouldDisableIMDS = true;
-
-        Aws::IAM::IAMClientConfiguration config{clientConfigInitValues};
-        config.region = gAwsRegion.getSelectedRegionId();
-
-        return Aws::IAM::IAMClient{provider, config};
-    }
-
-    std::string unix_epoch_ms_to_datetime_string(long long epochMs) {
-        std::chrono::system_clock::time_point tp{std::chrono::milliseconds{epochMs}};
-        return std::format("{0:%Y}-{0:%m}-{0:%d}:{0:%H}:{0:%M}:{0:%S}", tp);
-    }
 }
-
-class LogGroupsPanel {
-    using LogGroup = Aws::CloudWatchLogs::Model::LogGroup;
-    using CwlError = Aws::CloudWatchLogs::CloudWatchLogsError;
-
-    sm::AsyncDescribe<LogGroup, CwlError> mLogGroupDescribe;
-
-    ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
-
-    template<typename F, typename E>
-    void fetchAllLogGroups(F&& add, E&& err, std::stop_token stop) {
-        auto cwlClient = createCwlClient();
-
-        Aws::CloudWatchLogs::Model::DescribeLogGroupsRequest request;
-        request.SetLimit(50);
-
-        Aws::String nextToken;
-        do {
-            if (!nextToken.empty()) {
-                request.SetNextToken(nextToken);
-            }
-
-            auto outcome = cwlClient.DescribeLogGroups(request);
-            if (!outcome.IsSuccess()) {
-                err(outcome.GetError());
-                break;
-            }
-
-            const auto& result = outcome.GetResult();
-            for (const auto& logGroup : result.GetLogGroups()) {
-                add(logGroup);
-            }
-
-            nextToken = result.GetNextToken();
-        } while (!nextToken.empty() && !stop.stop_requested());
-    }
-
-public:
-    void render() {
-        bool isFetching = mLogGroupDescribe.isWorking();
-        ImGui::BeginDisabled(isFetching);
-        if (ImGui::Button(isFetching ? "Working..." : "Fetch")) {
-            mLogGroupDescribe.run([this](auto&& add, auto&& err, std::stop_token stop) {
-                fetchAllLogGroups(add, err, stop);
-            });
-        }
-        ImGui::EndDisabled();
-
-        if (mLogGroupDescribe.hasError()) {
-            ImGui::SameLine();
-            ImAws::ApiErrorTooltip(mLogGroupDescribe.error());
-        }
-
-        auto logGroups = mLogGroupDescribe.getItems();
-
-        if (ImGui::BeginTable("Log Groups", 3, mTableFlags)) {
-            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("ARN", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Creation Time", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableHeadersRow();
-            for (const auto& group : logGroups) {
-                ImGui::TableNextRow();
-
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(group.GetLogGroupName().c_str());
-
-                ImGui::TableSetColumnIndex(1);
-                ImAws::ArnTooltip(group.GetArn());
-
-                ImGui::TableSetColumnIndex(2);
-                auto time = unix_epoch_ms_to_datetime_string(group.GetCreationTime());
-                ImGui::TextUnformatted(time.c_str());
-            }
-
-            ImGui::EndTable();
-        }
-    }
-};
-
-class IamRolesPanel {
-    using Role = Aws::IAM::Model::Role;
-    using IamError = Aws::IAM::IAMError;
-
-    sm::AsyncDescribe<Role, IamError> mRoleDescribe;
-
-    ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
-
-    template<typename F, typename E>
-    void fetchAllRoles(F&& add, E&& err, std::stop_token stop) {
-        auto iamClient = createIamClient();
-
-        Aws::IAM::Model::ListRolesRequest request;
-        request.SetMaxItems(50);
-
-        Aws::String marker;
-        do {
-            if (!marker.empty()) {
-                request.SetMarker(marker);
-            }
-
-            auto outcome = iamClient.ListRoles(request);
-            if (!outcome.IsSuccess()) {
-                err(outcome.GetError());
-                break;
-            }
-
-            const auto& result = outcome.GetResult();
-            for (const auto& role : result.GetRoles()) {
-                add(role);
-            }
-
-            marker = result.GetMarker();
-        } while (!marker.empty() && !stop.stop_requested());
-    }
-
-public:
-    void render() {
-        bool isFetching = mRoleDescribe.isWorking();
-        ImGui::BeginDisabled(isFetching);
-        if (ImGui::Button(isFetching ? "Working..." : "Fetch")) {
-            mRoleDescribe.run([this](auto&& add, auto&& err, std::stop_token stop) {
-                fetchAllRoles(add, err, stop);
-            });
-        }
-        ImGui::EndDisabled();
-
-        if (mRoleDescribe.hasError()) {
-            ImGui::SameLine();
-            ImAws::ApiErrorTooltip(mRoleDescribe.error());
-        }
-
-        auto roles = mRoleDescribe.getItems();
-
-        if (ImGui::BeginTable("IAM Roles", 3, mTableFlags)) {
-            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("ARN", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Creation Time", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableHeadersRow();
-            for (const auto& role : roles) {
-                ImGui::TableNextRow();
-
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(role.GetRoleName().c_str());
-
-                ImGui::TableSetColumnIndex(1);
-                ImAws::ArnTooltip(role.GetArn());
-
-                ImGui::TableSetColumnIndex(2);
-                auto time = unix_epoch_ms_to_datetime_string(role.GetCreateDate().Millis());
-                ImGui::TextUnformatted(time.c_str());
-            }
-
-            ImGui::EndTable();
-        }
-    }
-};
 
 static bool gShowDemoWindow = true;
 static bool gShowPlotDemoWindow = true;
 static bool gShowPlot3dDemoWindow = true;
-static bool gShowIamRolesWindow = false;
-static bool gShowLogGroupsWindow = false;
 static bool gShowAwsSdkInfoWindow = false;
 
-static IamRolesPanel gIamRolesPanel;
-static LogGroupsPanel gLogGroupsPanel;
+using Aws::STS::Model::GetCallerIdentityOutcome;
+using Aws::STS::Model::GetCallerIdentityResult;
+
+class CreateSessionWindow {
+    ImAws::AwsRegion mRegion;
+    ImAws::AwsCredentialState mCredentials;
+    sm::AsyncAction<GetCallerIdentityOutcome> mCallerIdentity;
+    bool mLoggedIn{false};
+    std::string mSessionTitle;
+
+public:
+    bool render() {
+        if (mCallerIdentity.isComplete()) {
+            auto outcome = mCallerIdentity.getResult();
+            if (outcome.IsSuccess()) {
+                mLoggedIn = true;
+                auto result = outcome.GetResult();
+                mSessionTitle = std::format("Session - {} ({})",
+                                            result.GetArn(),
+                                            result.GetAccount());
+            } else {
+                ImGui::OpenPopup("Login Failed");
+            }
+
+            if (ImGui::BeginPopupModal("Login Failed")) {
+                ImAws::ApiErrorTooltip(outcome.GetError());
+                if (ImGui::Button("OK")) {
+                    mCallerIdentity.clear();
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+        }
+
+        if (ImGui::Begin("Create AWS Session")) {
+            ImAws::RegionCombo("##Region", &mRegion, ImGuiComboFlags_WidthFitPreview);
+            ImGui::SameLine();
+            ImAws::InputCredentials(&mCredentials);
+
+            ImGui::BeginDisabled(mCallerIdentity.isWorking());
+            const char *label = mCallerIdentity.isWorking() ? "Logging in..." : "Login";
+            if (ImGui::Button(label)) {
+                mCallerIdentity.run([this, provider = mCredentials.createProvider()]() {
+                    Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
+                    clientConfigInitValues.shouldDisableIMDS = true;
+
+                    Aws::STS::STSClientConfiguration config{clientConfigInitValues};
+                    config.region = mRegion.getSelectedRegionId();
+
+                    Aws::STS::STSClient stsClient{provider, config};
+                    return stsClient.GetCallerIdentity({});
+                });
+            }
+            ImGui::EndDisabled();
+        }
+        ImGui::End();
+
+        return mLoggedIn;
+    }
+
+    std::string getSessionTitle() const {
+        return mSessionTitle;
+    }
+
+    GetCallerIdentityResult getCallerIdentity() const {
+        return mCallerIdentity.getResult().GetResult();
+    }
+
+    std::string getSelectedRegionId() const {
+        return mRegion.getSelectedRegionId();
+    }
+
+    std::shared_ptr<Aws::Auth::AWSCredentialsProvider> createProvider() const {
+        return mCredentials.createProvider();
+    }
+
+    void reset() {
+        mLoggedIn = false;
+        mCallerIdentity.clear();
+        mSessionTitle.clear();
+    }
+};
+
+static CreateSessionWindow gCreateSessionWindow;
 
 void loop() {
     sm::Platform::begin();
@@ -248,7 +140,7 @@ void loop() {
 
         if (ImGui::BeginMenu("Sessions")) {
             for (auto& session : gSessions) {
-                ImAws::SessionMenu(*session);
+                session->drawMenu();
             }
             ImGui::EndMenu();
         }
@@ -258,8 +150,6 @@ void loop() {
             ImGui::MenuItem("ImPlot Demo Window", nullptr, &gShowPlotDemoWindow);
             ImGui::MenuItem("ImPlot3D Demo Window", nullptr, &gShowPlot3dDemoWindow);
             ImGui::MenuItem("AWS SDK Info", nullptr, &gShowAwsSdkInfoWindow);
-            ImGui::MenuItem("IAM Roles", nullptr, &gShowIamRolesWindow);
-            ImGui::MenuItem("CloudWatch Log Groups", nullptr, &gShowLogGroupsWindow);
             ImGui::EndMenu();
         }
 
@@ -279,38 +169,28 @@ void loop() {
         ImGui::EndMainMenuBar();
     }
 
-    if (ImGui::Begin("Aws Credentials")) {
-        ImAws::RegionCombo("##Region", &gAwsRegion, ImGuiComboFlags_WidthFitPreview);
-        ImGui::SameLine();
-        ImAws::InputCredentials(&gAwsCredentials);
+    if (gCreateSessionWindow.render()) {
+        ImAws::SessionInfo info;
+        info.title = gCreateSessionWindow.getSessionTitle();
+        info.callerIdentity = gCreateSessionWindow.getCallerIdentity();
+        info.region = gCreateSessionWindow.getSelectedRegionId();
+        info.provider = gCreateSessionWindow.createProvider();
+
+        gCreateSessionWindow.reset();
+
+        gSessions.push_back(std::make_unique<ImAws::Session>(std::move(info)));
     }
-    ImGui::End();
 
     if (gShowAwsSdkInfoWindow) {
-        if (ImGui::Begin("AWS SDK Info", &gShowAwsSdkInfoWindow)) {
+        if (auto _ = ImAws::Begin("AWS SDK Info", &gShowAwsSdkInfoWindow)) {
             ImGui::Text("AWS SDK Version: %s", Aws::Version::GetVersionString());
             ImGui::Text("Compiler: %s", Aws::Version::GetCompilerVersionString());
             ImGui::Text("C++ Standard: %s", Aws::Version::GetCPPStandard());
         }
-        ImGui::End();
     }
 
     for (auto& session : gSessions) {
         session->draw();
-    }
-
-    if (gShowIamRolesWindow) {
-        if (ImGui::Begin("IAM", &gShowIamRolesWindow)) {
-            gIamRolesPanel.render();
-        }
-        ImGui::End();
-    }
-
-    if (gShowLogGroupsWindow) {
-        if (ImGui::Begin("CloudWatch Log Groups", &gShowLogGroupsWindow)) {
-            gLogGroupsPanel.render();
-        }
-        ImGui::End();
     }
 
     if (gShowDemoWindow) {
@@ -346,7 +226,6 @@ int main(int argc, char **argv) {
     Aws::InitAPI(options);
 
     {
-        gSessions.push_back(std::make_unique<ImAws::Session>(1));
         sm::Platform::run(loop);
     }
 

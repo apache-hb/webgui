@@ -53,6 +53,25 @@ namespace ImAws {
     };
 }
 
+namespace ImAws {
+    class WindowHandle {
+        bool mOpen;
+    public:
+        WindowHandle(bool open)
+            : mOpen(open)
+        { }
+
+        operator bool() const {
+            return mOpen;
+        }
+
+        ~WindowHandle() {
+            ImGui::End();
+        }
+    };
+
+    WindowHandle Begin(const char *name, bool *p_open = nullptr, ImGuiWindowFlags flags = 0);
+}
 // -- Implementation --
 
 namespace ImAws {
