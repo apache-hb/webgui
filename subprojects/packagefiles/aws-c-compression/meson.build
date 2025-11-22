@@ -14,8 +14,8 @@ tests_opt = get_option('tests').disable_auto_if(meson.is_subproject())
 public_c_args = ['-DAWS_COMPRESSION_USE_IMPORT_EXPORT=1']
 c_args = ['-DAWS_COMPRESSION_EXPORTS=1']
 
-if host_machine.system() == 'windows'
-  public_c_args += ['-DUSE_WINDOWS_DLL_SEMANTICS=1']
+if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+  public_c_args += ['-DAWS_COMPRESSION_USE_IMPORT_EXPORT=1']
 endif
 
 aws_c_common_dep = dependency('aws-c-common')
@@ -31,6 +31,7 @@ libaws_c_compression = library(
   dependencies: aws_c_common_dep,
   include_directories: inc,
   install: true,
+  version: meson.project_version(),
   gnu_symbol_visibility: 'hidden',
 )
 

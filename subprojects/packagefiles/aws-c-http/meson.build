@@ -1,5 +1,6 @@
-project('aws-c-http',
-'c', version: '0.13.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-c-http', 'c', version: '0.13.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+
+pkg = import('pkgconfig')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_compression_dep = dependency('aws-c-compression')
@@ -40,19 +41,34 @@ src = files(
 
 inc = include_directories('include')
 
+c_args = ['-DAWS_HTTP_EXPORTS=1']
+public_c_args = []
+if get_option('default_library') == 'shared'
+  public_c_args += ['-DAWS_HTTP_USE_IMPORT_EXPORT=1']
+endif
+
 libaws_c_http = library(
     'aws-c-http',
     src,
+    c_args: c_args + public_c_args,
     include_directories: inc,
-    install: true,
     dependencies: deps,
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_c_http_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_c_http,
     dependencies: deps,
+    compile_args: public_c_args,
 )
 
 meson.override_dependency('aws-c-http', aws_c_http_dep)
+
+pkg.generate(
+    libaws_c_http,
+    extra_cflags: public_c_args,
+    description: 'C99 implementation of the HTTP/1.1 and HTTP/2 specifications',
+)

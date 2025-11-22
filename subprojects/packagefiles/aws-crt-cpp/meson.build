@@ -1,5 +1,4 @@
-project('aws-crt-cpp',
-'cpp', version: '0.35.2', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-crt-cpp', 'cpp', version: '0.35.2', license: 'Apache-2.0', meson_version: '>=0.63.0')
 
 pkg = import('pkgconfig')
 byo_crypto = get_option('byo_crypto')
@@ -80,24 +79,35 @@ if byo_crypto.allowed()
     cpp_args += [ '-DBYO_CRYPTO=1' ]
 endif
 
+cpp_args += ['-DAWS_CRT_CPP_EXPORTS=1']
+
+public_cpp_args = []
+if get_option('default_library') == 'shared'
+  public_cpp_args += ['-DAWS_CRT_CPP_USE_IMPORT_EXPORT=1']
+endif
+
 libaws_cpp_crt = library(
     'aws-crt-cpp',
     src,
-    cpp_args: cpp_args,
+    cpp_args: cpp_args + public_cpp_args,
     include_directories: inc,
     dependencies: deps,
     install: true,
+    version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_crt_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_crt,
     dependencies: deps,
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-crt-cpp', aws_cpp_crt_dep)
 
 pkg.generate(
     libaws_cpp_crt,
+    extra_cflags: public_cpp_args,
     description: 'C++ wrapper around the aws-c-* libraries. Provides Cross-Platform Transport Protocols and SSL/TLS implementations for C++.',
 )

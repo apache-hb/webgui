@@ -98,10 +98,11 @@ libaws_cpp_sdk_elasticloadbalancing = library(
     'aws-cpp-sdk-elasticloadbalancing',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_ELASTICLOADBALANCING_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_elasticloadbalancing_dep = declare_dependency(

@@ -13,5 +13,6 @@ option(
 option(
     'byo_crypto',
     type: 'feature',
+    value: 'disabled',
     description: 'Set this if you want to provide your own cryptography implementation. This will cause the defaults to not be compiled.',
 )

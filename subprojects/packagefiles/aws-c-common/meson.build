@@ -86,8 +86,12 @@ generic_src = files(
   'source/xml_parser.c',
 )
 
-public_c_args = ['-DAWS_COMMON_USE_IMPORT_EXPORT']
-c_args = ['-DAWS_COMMON_EXPORTS']
+c_args = ['-DAWS_COMMON_EXPORTS=1']
+
+public_c_args = []
+if get_option('default_library') == 'shared'
+  public_c_args += ['-DAWS_COMMON_USE_IMPORT_EXPORT=1']
+endif
 
 if host_machine.cpu_family() in ['x86', 'x86_64']
   if cc.get_argument_syntax() == 'msvc'

@@ -356,10 +356,11 @@ libaws_cpp_sdk_ecs = library(
     'aws-cpp-sdk-ecs',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_ECS_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_ecs_dep = declare_dependency(

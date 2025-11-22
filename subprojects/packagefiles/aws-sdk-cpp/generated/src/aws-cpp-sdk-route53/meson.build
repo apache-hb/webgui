@@ -214,10 +214,11 @@ libaws_cpp_sdk_route53 = library(
     'aws-cpp-sdk-route53',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_ROUTE53_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_route53_dep = declare_dependency(

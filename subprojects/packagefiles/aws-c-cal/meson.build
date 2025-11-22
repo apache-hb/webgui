@@ -11,12 +11,19 @@ fs = import('fs')
 pkg = import('pkgconfig')
 
 tests_opt = get_option('tests').disable_auto_if(meson.is_subproject())
-has_openssl = host_machine.system() in ['linux', 'emscripten']
-byo_crypto = get_option('byo_crypto')
-ed25519_everywhere = get_option('ed25519_everywhere').disable_auto_if(not has_openssl)
+may_have_openssl = host_machine.system() in ['linux', 'emscripten']
+is_windows = host_machine.system() == 'windows'
+is_darwin = host_machine.system() == 'darwin'
 
-public_c_args = ['-DAWS_CAL_USE_IMPORT_EXPORT=1']
+byo_crypto = get_option('byo_crypto')
+ed25519_everywhere = get_option('ed25519_everywhere').disable_auto_if(not may_have_openssl)
+
 c_args = ['-DAWS_CAL_EXPORTS=1']
+
+public_c_args = []
+if get_option('default_library') == 'shared'
+  public_c_args += ['-DAWS_CAL_USE_IMPORT_EXPORT=1']
+endif
 
 if host_machine.system() == 'windows' and host_machine.cpu_family() in [
   'x86',
@@ -29,18 +36,27 @@ aws_c_common_dep = dependency('aws-c-common')
 libcrypto_dep = dependency(
   'openssl',
   version: '>=1.1',
-  required: ed25519_everywhere
+  required: not byo_crypto.allowed(),
 )
+
 ncrypt = cc.find_library(
   'ncrypt',
-  required: host_machine.system() == 'windows',
+  required: false,
 )
 
 foundation = dependency(
   'appleframeworks',
   modules: ['Security', 'CoreFoundation'],
-  required: host_machine.system() == 'darwin',
+  required: false,
 )
+
+if is_windows
+  byo_crypto = byo_crypto.disable_auto_if(ncrypt.found())
+endif
+
+if is_darwin
+  byo_crypto = byo_crypto.disable_auto_if(foundation.found())
+endif
 
 src = files(
   'source/cal.c',
@@ -66,36 +82,38 @@ else
   src += files('source/shared/ed25519_noop.c')
 endif
 
-if host_machine.system() in ['cygwin', 'windows']
-  src += files(
-    'source/windows/bcrypt_aes.c',
-    'source/windows/bcrypt_ecc.c',
-    'source/windows/bcrypt_hash.c',
-    'source/windows/bcrypt_hmac.c',
-    'source/windows/bcrypt_platform_init.c',
-    'source/windows/bcrypt_rsa.c',
-  )
-elif host_machine.system() == 'darwin'
-  src += files(
-    'source/darwin/commoncrypto_aes.c',
-    'source/darwin/commoncrypto_hmac.c',
-    'source/darwin/commoncrypto_md5.c',
-    'source/darwin/commoncrypto_platform_init.c',
-    'source/darwin/commoncrypto_sha1.c',
-    'source/darwin/commoncrypto_sha256.c',
-    'source/darwin/commoncrypto_sha512.c',
-    'source/darwin/securityframework_ecc.c',
-    'source/darwin/securityframework_rsa.c',
-  )
-elif host_machine.system() in ['linux', 'emscripten']
-  src += files(
-    'source/unix/openssl_aes.c',
-    'source/unix/openssl_platform_init.c',
-    'source/unix/openssl_rsa.c',
-    'source/unix/opensslcrypto_ecc.c',
-    'source/unix/opensslcrypto_hash.c',
-    'source/unix/opensslcrypto_hmac.c',
-  )
+if not byo_crypto.allowed()
+  if host_machine.system() in ['cygwin', 'windows']
+    src += files(
+      'source/windows/bcrypt_aes.c',
+      'source/windows/bcrypt_ecc.c',
+      'source/windows/bcrypt_hash.c',
+      'source/windows/bcrypt_hmac.c',
+      'source/windows/bcrypt_platform_init.c',
+      'source/windows/bcrypt_rsa.c',
+    )
+  elif host_machine.system() == 'darwin'
+    src += files(
+      'source/darwin/commoncrypto_aes.c',
+      'source/darwin/commoncrypto_hmac.c',
+      'source/darwin/commoncrypto_md5.c',
+      'source/darwin/commoncrypto_platform_init.c',
+      'source/darwin/commoncrypto_sha1.c',
+      'source/darwin/commoncrypto_sha256.c',
+      'source/darwin/commoncrypto_sha512.c',
+      'source/darwin/securityframework_ecc.c',
+      'source/darwin/securityframework_rsa.c',
+    )
+  elif host_machine.system() in ['linux', 'emscripten']
+    src += files(
+      'source/unix/openssl_aes.c',
+      'source/unix/openssl_platform_init.c',
+      'source/unix/openssl_rsa.c',
+      'source/unix/opensslcrypto_ecc.c',
+      'source/unix/opensslcrypto_hash.c',
+      'source/unix/opensslcrypto_hmac.c',
+    )
+  endif
 endif
 
 inc = include_directories('include')
@@ -106,7 +124,9 @@ libaws_c_cal = library(
   c_args: c_args + public_c_args,
   dependencies: [aws_c_common_dep, libcrypto_dep, ncrypt, foundation],
   include_directories: inc,
+  install: true,
   version: meson.project_version(),
+  gnu_symbol_visibility: 'hidden',
 )
 
 aws_c_cal_dep = declare_dependency(

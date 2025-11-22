@@ -1,4 +1,3 @@
-#include <emscripten/fetch.h>
 #include <stdio.h>
 
 #include "aws/sts/STSClient.h"

@@ -49,10 +49,11 @@ libaws_cpp_sdk_account = library(
     'aws-cpp-sdk-account',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_KMS_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_account_dep = declare_dependency(

@@ -139,10 +139,11 @@ libaws_cpp_sdk_monitoring = library(
     'aws-cpp-sdk-monitoring',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_CLOUDWATCH_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_monitoring_dep = declare_dependency(

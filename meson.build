@@ -1,5 +1,9 @@
 project('webgui', 'cpp',
-    default_options: ['cpp_std=c++26'],
+    default_options: [
+        'cpp_std=c++26',
+        # Always force fallback so we get the latest version of aws-cpp-sdk
+        'wrap_mode=forcefallback',
+    ],
 )
 
 cpp = meson.get_compiler('cpp')
@@ -69,8 +73,10 @@ cpp_args = cpp.get_supported_arguments([
 
 root = meson.project_source_root()
 
-executable('gui', src,
-    link_args: [
+link_args = []
+exe_install_dir = get_option('bindir')
+if host_machine.system() == 'emscripten'
+    link_args += [
         '-lGL',
         '-sFETCH',
         '-sEXPORTED_RUNTIME_METHODS=[ccall]',
@@ -78,13 +84,22 @@ executable('gui', src,
         '-lidbfs.js',
         '--pre-js', join_paths(root, 'assets', 'pre.js'),
         '--preload-file', join_paths(root, 'assets', 'fonts') + '@/fonts',
-    ],
+    ]
+    cpp_args += [ '--use-port=contrib.glfw3' ]
+    exe_install_dir = get_option('datadir')
+endif
+
+executable('gui', src,
+    link_args: link_args,
     include_directories: inc,
-    cpp_args: cpp_args + [ '--use-port=contrib.glfw3' ],
+    cpp_args: cpp_args,
     dependencies: deps,
     install: true,
-    install_dir: get_option('datadir'),
+    install_dir: exe_install_dir,
+    override_options: ['cpp_std=c++26'],
 )
 
-install_data('assets/index.html', install_dir: get_option('datadir'))
-install_data(meson.project_build_root() / 'gui.data', install_dir: get_option('datadir'))
+if host_machine.system() == 'emscripten'
+    install_data('assets/index.html', install_dir: get_option('datadir'))
+    install_data(meson.project_build_root() / 'gui.data', install_dir: get_option('datadir'))
+endif

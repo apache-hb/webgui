@@ -31,15 +31,18 @@ imgui_impl_osx_dep = disabler()
 imgui_impl_metal_dep = disabler()
 
 if host_machine.system() in ['linux', 'emscripten']
+    glfw_dep = dependency('glfw3', required: host_machine.system() == 'linux')
+
     src = files('backends/imgui_impl_glfw.cpp')
     libimgui_impl_glfw = library('imgui_impl_glfw', src,
-        dependencies: imgui_dep,
+        dependencies: [imgui_dep, glfw_dep],
         include_directories: inc,
         build_by_default: false
     )
     imgui_impl_glfw_dep = declare_dependency(
         include_directories: inc,
-        link_with: libimgui_impl_glfw
+        link_with: libimgui_impl_glfw,
+        dependencies: [glfw_dep],
     )
 
     src = files('backends/imgui_impl_opengl3.cpp')

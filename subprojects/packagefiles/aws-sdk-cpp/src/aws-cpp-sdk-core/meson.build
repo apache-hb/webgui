@@ -213,19 +213,34 @@ elif host_machine.system() == 'emscripten'
     src += linux_src
 endif
 
+cpp_args = ['-DAWS_CORE_EXPORTS=1']
+public_cpp_args = []
+if get_option('default_library') == 'shared'
+    public_cpp_args += ['-DUSE_IMPORT_EXPORT=1']
+endif
+
 libaws_cpp_sdk_core = library(
     'aws-cpp-sdk-core',
     src,
+    cpp_args: cpp_args + public_cpp_args,
     include_directories: inc,
-    install: true,
     dependencies: [aws_crt_cpp_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_core_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_sdk_core,
     dependencies: [aws_crt_cpp_dep],
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-cpp-sdk-core', aws_cpp_sdk_core_dep)
+
+pkg.generate(
+    libaws_cpp_sdk_core,
+    extra_cflags: public_cpp_args,
+    description: 'Core http and utility library for the AWS C++ SDK',
+)

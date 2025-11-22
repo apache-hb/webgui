@@ -1,5 +1,6 @@
-project('aws-c-s3',
-'c', version: '0.13.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-c-s3', 'c', version: '0.10.1', license: 'Apache-2.0', meson_version: '>=0.63.0')
+
+pkg = import('pkgconfig')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_auth_dep = dependency('aws-c-auth')
@@ -40,19 +41,34 @@ src = files(
 
 inc = include_directories('include')
 
+c_args = ['-DAWS_S3_EXPORTS=1']
+public_c_args = []
+if get_option('default_library') == 'shared'
+  public_c_args += ['-DAWS_S3_USE_IMPORT_EXPORT=1']
+endif
+
 libaws_c_s3 = library(
     'aws-c-s3',
     src,
+    c_args: c_args + public_c_args,
     include_directories: inc,
-    install: true,
     dependencies: deps,
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_c_s3_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_c_s3,
     dependencies: deps,
+    compile_args: public_c_args,
 )
 
 meson.override_dependency('aws-c-s3', aws_c_s3_dep)
+
+pkg.generate(
+    libaws_c_s3,
+    extra_cflags: public_c_args,
+    description: 'C99 library implementation for communicating with the S3 service, designed for maximizing throughput on high bandwidth EC2 instances.',
+)

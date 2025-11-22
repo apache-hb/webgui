@@ -416,10 +416,11 @@ libaws_cpp_sdk_s3 = library(
     'aws-cpp-sdk-s3',
     src,
     include_directories: inc,
-    install: true,
     cpp_args: ['-DAWS_S3_EXPORTS=1'],
     dependencies: [aws_cpp_sdk_core_dep],
+    install: true,
     version: meson.project_version(),
+    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_s3_dep = declare_dependency(
