@@ -103,5 +103,5 @@ executable('gui', src,
 
 if host_machine.system() == 'emscripten'
     install_data('assets/index.html', install_dir: get_option('datadir'))
-    install_data(meson.project_build_root() / 'gui.data', install_dir: get_option('datadir'))
+    meson.add_install_script('data/meson/emscripten-install.sh')
 endif
