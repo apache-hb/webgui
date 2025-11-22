@@ -19,7 +19,7 @@ using Aws::Utils::RateLimits::RateLimiterInterface;
 using sm::Platform_Emscripten;
 
 namespace {
-    bool equals_ignore_case(const char* a, const char* b) {
+    bool equalsIgnoreCase(const char* a, const char* b) {
         while (*a && *b) {
             if (tolower(*a) != tolower(*b)) {
                 return false;
@@ -33,7 +33,7 @@ namespace {
     class EmsdkWgetHttpClient final : public HttpClient {
         ClientConfiguration mClientConfig;
 
-        static void copy_content_body(std::vector<char>& dst, Aws::IOStream& body) {
+        static void copyContentBody(std::vector<char>& dst, Aws::IOStream& body) {
             body.seekg(0, std::ios::end);
             size_t size = body.tellg();
             body.seekg(0, std::ios::beg);
@@ -41,11 +41,11 @@ namespace {
             body.read(dst.data(), size);
         }
 
-        static std::vector<char*> create_headers(const HeaderValueCollection& source) {
+        static std::vector<char*> createHeaders(const HeaderValueCollection& source) {
             std::vector<char*> headers;
             for (const auto& header : source) {
                 // These cannot be set manually
-                if (equals_ignore_case(header.first.c_str(), "Host") || equals_ignore_case(header.first.c_str(), "User-Agent") || equals_ignore_case(header.first.c_str(), "Content-Length")) {
+                if (equalsIgnoreCase(header.first.c_str(), "Host") || equalsIgnoreCase(header.first.c_str(), "User-Agent") || equalsIgnoreCase(header.first.c_str(), "Content-Length")) {
                     continue;
                 }
                 headers.push_back(strdup(header.first.c_str()));
@@ -55,7 +55,7 @@ namespace {
             return headers;
         }
 
-        static void free_headers(std::vector<char*> headers) {
+        static void freeHeaders(std::vector<char*> headers) {
             for (const auto& header : headers) {
                 if (header != nullptr) {
                     free((void*)header);
@@ -76,11 +76,11 @@ namespace {
             std::vector<char> requestBody;
 
             if (auto body = request->GetContentBody()) {
-                copy_content_body(requestBody, *body);
+                copyContentBody(requestBody, *body);
             }
 
-            std::vector headers = create_headers(request->GetHeaders());
-            defer { free_headers(headers); };
+            std::vector headers = createHeaders(request->GetHeaders());
+            defer { freeHeaders(headers); };
 
             emscripten_fetch_attr_t attr{};
             emscripten_fetch_attr_init(&attr);
@@ -100,7 +100,7 @@ namespace {
 
             defer { emscripten_fetch_close(fetch); };
 
-            auto response = Aws::MakeShared<Standard::StandardHttpResponse>("EmsdkWgetHttpClientAllocationTag", request);
+            auto response = Aws::MakeShared<Standard::StandardHttpResponse>("Standard::StandardHttpResponse", request);
             response->SetResponseCode(static_cast<HttpResponseCode>(fetch->status));
             response->SetOriginatingRequest(request);
 
@@ -132,19 +132,19 @@ namespace {
     public:
         std::shared_ptr<HttpClient>
         CreateHttpClient(const ClientConfiguration &clientConfiguration) const override {
-            return Aws::MakeShared<EmsdkWgetHttpClient>("EmsdkWgetHttpClientAllocationTag", clientConfiguration);
+            return Aws::MakeShared<EmsdkWgetHttpClient>("EmsdkWgetHttpClient", clientConfiguration);
         }
 
         std::shared_ptr<HttpRequest>
         CreateHttpRequest(const Aws::String &uri, HttpMethod method, const Aws::IOStreamFactory &streamFactory) const override {
-            auto request = Aws::MakeShared<Standard::StandardHttpRequest>("StandardHttpRequestAllocationTag", uri, method);
+            auto request = Aws::MakeShared<Standard::StandardHttpRequest>("Standard::StandardHttpRequest", uri, method);
             request->SetResponseStreamFactory(streamFactory);
             return request;
         }
 
         std::shared_ptr<HttpRequest>
         CreateHttpRequest(const URI &uri, HttpMethod method, const Aws::IOStreamFactory &streamFactory) const override {
-            auto request = Aws::MakeShared<Standard::StandardHttpRequest>("StandardHttpRequestAllocationTag", uri, method);
+            auto request = Aws::MakeShared<Standard::StandardHttpRequest>("Standard::StandardHttpRequest", uri, method);
             request->SetResponseStreamFactory(streamFactory);
             return request;
         }
@@ -153,6 +153,6 @@ namespace {
 
 void Platform_Emscripten::configureAwsSdkOptions(Aws::SDKOptions& options) {
     options.httpOptions.httpClientFactory_create_fn = [] {
-        return Aws::MakeShared<EmsdkWgetClientFactory>("EmsdkWgetClientFactoryAllocationTag");
+        return Aws::MakeShared<EmsdkWgetClientFactory>("EmsdkWgetClientFactory");
     };
 }

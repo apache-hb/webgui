@@ -18,6 +18,10 @@ m = cc.find_library(
   'm',
   required: false,
 )
+dl = cc.find_library(
+  'dl',
+  required: false,
+)
 bcrypt = cc.find_library(
   'bcrypt',
   required: host_machine.system() == 'windows',
@@ -174,7 +178,7 @@ libaws_c_common = library(
   generic_src,
   platform_src,
   arch_src,
-  dependencies: [libcbor, cjson, threads, m, bcrypt, shlwapi, foundation],
+  dependencies: [libcbor, cjson, threads, m, dl, bcrypt, shlwapi, foundation],
   c_args: c_args + public_c_args,
   include_directories: inc,
   install: true,

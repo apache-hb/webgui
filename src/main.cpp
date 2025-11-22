@@ -1,3 +1,4 @@
+#include <emscripten/fetch.h>
 #include <stdio.h>
 
 #include "aws/sts/STSClient.h"
@@ -40,8 +41,8 @@ namespace {
 }
 
 static bool gShowDemoWindow = true;
-static bool gShowPlotDemoWindow = true;
-static bool gShowPlot3dDemoWindow = true;
+static bool gShowPlotDemoWindow = false;
+static bool gShowPlot3dDemoWindow = false;
 static bool gShowAwsSdkInfoWindow = false;
 
 using Aws::STS::Model::GetCallerIdentityOutcome;
@@ -61,9 +62,7 @@ public:
             if (outcome.IsSuccess()) {
                 mLoggedIn = true;
                 auto result = outcome.GetResult();
-                mSessionTitle = std::format("Session - {} ({})",
-                                            result.GetArn(),
-                                            result.GetAccount());
+                mSessionTitle = std::format("Session - {}", result.GetArn());
             } else {
                 ImGui::OpenPopup("Login Failed");
             }
@@ -170,11 +169,12 @@ void loop() {
     }
 
     if (gCreateSessionWindow.render()) {
-        ImAws::SessionInfo info;
-        info.title = gCreateSessionWindow.getSessionTitle();
-        info.callerIdentity = gCreateSessionWindow.getCallerIdentity();
-        info.region = gCreateSessionWindow.getSelectedRegionId();
-        info.provider = gCreateSessionWindow.createProvider();
+        ImAws::SessionInfo info {
+            .title = gCreateSessionWindow.getSessionTitle(),
+            .callerIdentity = gCreateSessionWindow.getCallerIdentity(),
+            .region = gCreateSessionWindow.getSelectedRegionId(),
+            .provider = gCreateSessionWindow.createProvider(),
+        };
 
         gCreateSessionWindow.reset();
 

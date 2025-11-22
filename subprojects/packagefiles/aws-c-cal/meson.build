@@ -22,7 +22,7 @@ if host_machine.system() == 'windows' and host_machine.cpu_family() in [
   'x86',
   'aarch64',
 ]
-  error('unsupported architecture: only x86_64 Windows is supported')
+  error('unsupported architecture: only x86_64 is supported on Windows')
 endif
 
 aws_c_common_dep = dependency('aws-c-common')
