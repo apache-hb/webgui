@@ -128,7 +128,9 @@ public:
 static CreateSessionWindow gCreateSessionWindow;
 
 void loop() {
-    sm::Platform::begin();
+    if (!sm::Platform::begin()) {
+        return;
+    }
 
     ImGui::DockSpaceOverViewport();
 

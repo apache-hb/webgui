@@ -45,15 +45,20 @@ src = files(
 
 inc = include_directories('include')
 
+if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+    cpp_args = ['-DAWS_ACCOUNT_EXPORTS=1']
+else
+    cpp_args = []
+endif
+
 libaws_cpp_sdk_account = library(
     'aws-cpp-sdk-account',
     src,
     include_directories: inc,
-    cpp_args: ['-DAWS_KMS_EXPORTS=1'],
+    cpp_args: cpp_args,
     dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
-    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_account_dep = declare_dependency(

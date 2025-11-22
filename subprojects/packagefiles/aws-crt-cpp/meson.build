@@ -82,7 +82,7 @@ endif
 cpp_args += ['-DAWS_CRT_CPP_EXPORTS=1']
 
 public_cpp_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_cpp_args += ['-DAWS_CRT_CPP_USE_IMPORT_EXPORT=1']
 endif
 

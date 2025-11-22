@@ -21,7 +21,7 @@ ed25519_everywhere = get_option('ed25519_everywhere').disable_auto_if(not may_ha
 c_args = ['-DAWS_CAL_EXPORTS=1']
 
 public_c_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_CAL_USE_IMPORT_EXPORT=1']
 endif
 

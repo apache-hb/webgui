@@ -7,10 +7,10 @@ src = files(
 
 inc = include_directories('include')
 
-cpp_args = ['-DAWS_IDENTITY_MANAGEMENT_EXPORTS=1']
-public_cpp_args = []
-if get_option('default_library') == 'shared'
-    public_cpp_args += ['-DUSE_IMPORT_EXPORT=1']
+if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+    cpp_args = ['-DAWS_IDENTITY_MANAGEMENT_EXPORTS=1']
+else
+    cpp_args = []
 endif
 
 libaws_cpp_sdk_identity_management = library(
@@ -21,7 +21,6 @@ libaws_cpp_sdk_identity_management = library(
     dependencies: [aws_cpp_sdk_core_dep, aws_cpp_sdk_cognito_identity_dep, aws_cpp_sdk_sts_dep],
     install: true,
     version: meson.project_version(),
-    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_identity_management_dep = declare_dependency(

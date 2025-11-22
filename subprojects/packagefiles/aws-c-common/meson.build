@@ -89,7 +89,7 @@ generic_src = files(
 c_args = ['-DAWS_COMMON_EXPORTS=1']
 
 public_c_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_COMMON_USE_IMPORT_EXPORT=1']
 endif
 
@@ -136,7 +136,10 @@ if host_machine.system() == 'darwin'
   )
   c_args += ['-DAWS_AFFINITY_METHOD=AWS_AFFINITY_METHOD_NONE']
 elif host_machine.system() == 'linux'
-  platform_src = posix_src + files('source/linux/system_info.c')
+  platform_src = posix_src + files(
+    'source/linux/system_info.c',
+    'source/linux/file_direct_io.c',
+  )
   if cc.has_function(
     'pthread_attr_setaffinity_np',
     prefix: '#include <pthread.h>',

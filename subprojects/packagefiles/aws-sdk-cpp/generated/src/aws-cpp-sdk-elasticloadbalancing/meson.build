@@ -94,21 +94,27 @@ src = files(
 
 inc = include_directories('include')
 
+if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+    cpp_args = ['-DAWS_ELASTICLOADBALANCING_EXPORTS=1']
+else
+    cpp_args = []
+endif
+
 libaws_cpp_sdk_elasticloadbalancing = library(
     'aws-cpp-sdk-elasticloadbalancing',
     src,
     include_directories: inc,
-    cpp_args: ['-DAWS_ELASTICLOADBALANCING_EXPORTS=1'],
+    cpp_args: cpp_args + public_cpp_args,
     dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
-    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_elasticloadbalancing_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_sdk_elasticloadbalancing,
     dependencies: [aws_cpp_sdk_core_dep],
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-cpp-sdk-elasticloadbalancing', aws_cpp_sdk_elasticloadbalancing_dep)

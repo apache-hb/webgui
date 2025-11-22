@@ -4,6 +4,11 @@ pkg = import('pkgconfig')
 
 aws_crt_cpp_dep = dependency('aws-crt-cpp')
 
+public_cpp_args = []
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
+    public_cpp_args += ['-DUSE_IMPORT_EXPORT=1']
+endif
+
 subdir('src/aws-cpp-sdk-core')
 
 subdir('generated/src/aws-cpp-sdk-account')

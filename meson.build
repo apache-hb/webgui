@@ -87,6 +87,8 @@ if host_machine.system() == 'emscripten'
     ]
     cpp_args += [ '--use-port=contrib.glfw3' ]
     exe_install_dir = get_option('datadir')
+elif host_machine.system() == 'linux'
+    deps += [dependency('gl')]
 endif
 
 executable('gui', src,

@@ -1,13 +1,19 @@
 project('aws-c-s3', 'c', version: '0.10.1', license: 'Apache-2.0', meson_version: '>=0.63.0')
 
 pkg = import('pkgconfig')
+cc = meson.get_compiler('c')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_auth_dep = dependency('aws-c-auth')
 aws_checksums_dep = dependency('aws-checksums')
 aws_c_http_dep = dependency('aws-c-http')
 
-deps = [aws_c_common_dep, aws_c_auth_dep, aws_checksums_dep, aws_c_http_dep]
+m = cc.find_library(
+  'm',
+  required: false,
+)
+
+deps = [aws_c_common_dep, aws_c_auth_dep, aws_checksums_dep, aws_c_http_dep, m]
 
 src = files(
     'source/s3_request.c',
@@ -43,7 +49,7 @@ inc = include_directories('include')
 
 c_args = ['-DAWS_S3_EXPORTS=1']
 public_c_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_S3_USE_IMPORT_EXPORT=1']
 endif
 

@@ -4,9 +4,17 @@ pkg = import('pkgconfig')
 
 byo_crypto = get_option('byo_crypto')
 
+cc = meson.get_compiler('c')
+
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_cal_dep = dependency('aws-c-cal')
 upoll_dep = dependency('upoll', required: host_machine.system() == 'emscripten')
+s2n_tls_dep = dependency('s2n-tls', required: byo_crypto.disabled())
+
+m = cc.find_library(
+  'm',
+  required: false,
+)
 
 src = files(
     'source/socket.c',
@@ -79,6 +87,7 @@ emscripten_src = files(
 c_args = ['-DAWS_IO_EXPORTS=1']
 public_inc = include_directories('include')
 inc = [public_inc]
+deps = [aws_c_common_dep, aws_c_cal_dep, upoll_dep, m]
 
 if host_machine.system() == 'linux'
     src += linux_src + posix_src
@@ -104,11 +113,12 @@ if byo_crypto.allowed()
     c_args += [ '-DBYO_CRYPTO=1' ]
 else
     src += s2n_src
-    c_args += [ '-DAWS_USE_S2N_TLS=1' ]
+    c_args += [ '-DUSE_S2N=1' ]
+    deps += s2n_tls_dep
 endif
 
 public_c_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_IO_USE_IMPORT_EXPORT=1']
 endif
 
@@ -117,7 +127,7 @@ libaws_c_io = library(
     src,
     c_args: c_args + public_c_args,
     include_directories: inc,
-    dependencies: [aws_c_common_dep, aws_c_cal_dep, upoll_dep],
+    dependencies: deps,
     install: true,
     version: meson.project_version(),
     gnu_symbol_visibility: 'hidden',

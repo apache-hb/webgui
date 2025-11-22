@@ -10,8 +10,6 @@ src = files(
     'source/AmazonStreamingWebServiceRequest.cpp',
     'source/Region.cpp',
     'source/AmazonWebServiceRequest.cpp',
-    'source/net/SimpleUDP.cpp',
-    'source/net/Net.cpp',
     'source/utils/StringUtils.cpp',
     'source/utils/FileSystemUtils.cpp',
     'source/utils/Document.cpp',
@@ -203,20 +201,34 @@ linux_net_src = files(
     'source/net/linux-shared/Net.cpp',
 )
 
+default_net_src = files(
+    'source/net/SimpleUDP.cpp',
+    'source/net/Net.cpp',
+)
+
+deps = [aws_crt_cpp_dep]
+curl = dependency('libcurl', required: host_machine.system() in ['linux', 'android'])
+
+if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+    cpp_args = ['-DAWS_CORE_EXPORTS=1', '-DSMITHY_EXPORTS=1']
+else
+    cpp_args = []
+endif
+
 if host_machine.system() == 'windows'
     src += windows_src + windows_http_src + windows_net_src
 elif host_machine.system() == 'android'
     src += android_src + curl_http_src
+    deps += [curl]
+    cpp_args += ['-DENABLE_CURL_CLIENT=1']
 elif host_machine.system() == 'linux'
     src += linux_src + curl_http_src + linux_net_src
+    deps += [curl]
+    cpp_args += ['-DENABLE_CURL_CLIENT=1']
 elif host_machine.system() == 'emscripten'
-    src += linux_src
-endif
-
-cpp_args = ['-DAWS_CORE_EXPORTS=1']
-public_cpp_args = []
-if get_option('default_library') == 'shared'
-    public_cpp_args += ['-DUSE_IMPORT_EXPORT=1']
+    src += linux_src + default_net_src
+else
+    src += default_net_src
 endif
 
 libaws_cpp_sdk_core = library(
@@ -224,10 +236,9 @@ libaws_cpp_sdk_core = library(
     src,
     cpp_args: cpp_args + public_cpp_args,
     include_directories: inc,
-    dependencies: [aws_crt_cpp_dep],
+    dependencies: deps,
     install: true,
     version: meson.project_version(),
-    gnu_symbol_visibility: 'hidden',
 )
 
 aws_cpp_sdk_core_dep = declare_dependency(

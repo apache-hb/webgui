@@ -14,7 +14,7 @@ tests_opt = get_option('tests').disable_auto_if(meson.is_subproject())
 public_c_args = ['-DAWS_COMPRESSION_USE_IMPORT_EXPORT=1']
 c_args = ['-DAWS_COMPRESSION_EXPORTS=1']
 
-if host_machine.system() == 'windows' and get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_COMPRESSION_USE_IMPORT_EXPORT=1']
 endif
 

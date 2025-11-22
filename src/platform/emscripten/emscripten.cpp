@@ -70,7 +70,7 @@ namespace {
         return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     });
 
-    void init_imgui() {
+    void initImGui() {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImPlot::CreateContext();
@@ -130,7 +130,7 @@ int Platform_Emscripten::setup(const PlatformCreateInfo& createInfo) {
         return res;
     }
 
-    init_imgui();
+    initImGui();
     initClipboard();
 
     gClearColour = createInfo.clear;
@@ -156,12 +156,14 @@ void Platform_Emscripten::run(void (*fn)()) {
     emscripten_set_main_loop(fn, 0, 1);
 }
 
-void Platform_Emscripten::begin() {
+bool Platform_Emscripten::begin() {
     glfwPollEvents();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    return true;
 }
 
 void Platform_Emscripten::end() {

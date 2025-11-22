@@ -49,8 +49,8 @@ inc = include_directories('include')
 c_args = ['-DAWS_AUTH_EXPORTS=1']
 public_c_args = []
 
-if get_option('default_library') == 'shared'
-  public_c_args += ['-DAWS_COMPRESSION_USE_IMPORT_EXPORT=1']
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
+  public_c_args += ['-DAWS_AUTH_USE_IMPORT_EXPORT=1']
 endif
 
 libaws_c_auth = library(

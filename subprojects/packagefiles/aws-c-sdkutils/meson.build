@@ -23,7 +23,7 @@ inc = include_directories('include')
 
 c_args = ['-DAWS_SDKUTILS_EXPORTS=1']
 public_c_args = []
-if get_option('default_library') == 'shared'
+if (get_option('default_library') == 'shared' and host_machine.system() == 'windows') or host_machine.system() != 'windows'
   public_c_args += ['-DAWS_SDKUTILS_USE_IMPORT_EXPORT=1']
 endif
 
