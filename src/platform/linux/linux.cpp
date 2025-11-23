@@ -20,6 +20,7 @@ namespace {
         glfwSetErrorCallback([](int error, const char* description) {
             fprintf(stderr, "GLFW Error %d: %s\n", error, description);
         });
+
         if (!glfwInit()) {
             fprintf(stderr, "Failed to initialize GLFW\n");
             return 1;
@@ -75,8 +76,7 @@ namespace {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
             style.WindowRounding = 0.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
@@ -147,8 +147,7 @@ void Platform_Linux::end() {
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         GLFWwindow* backup_current_context = glfwGetCurrentContext();
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
