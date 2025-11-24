@@ -37,12 +37,11 @@
 
 namespace {
     std::vector<std::unique_ptr<ImAws::Session>> gSessions;
+    bool gShowDemoWindow = true;
+    bool gShowPlotDemoWindow = false;
+    bool gShowPlot3dDemoWindow = false;
+    bool gShowAwsSdkInfoWindow = false;
 }
-
-static bool gShowDemoWindow = true;
-static bool gShowPlotDemoWindow = false;
-static bool gShowPlot3dDemoWindow = false;
-static bool gShowAwsSdkInfoWindow = false;
 
 using Aws::STS::Model::GetCallerIdentityOutcome;
 using Aws::STS::Model::GetCallerIdentityResult;
@@ -139,8 +138,12 @@ void loop() {
         ImGui::Separator();
 
         if (ImGui::BeginMenu("Sessions")) {
-            for (auto& session : gSessions) {
-                session->drawMenu();
+            if (gSessions.empty()) {
+                ImGui::TextUnformatted("No active sessions");
+            } else {
+                for (auto& session : gSessions) {
+                    session->drawMenu();
+                }
             }
             ImGui::EndMenu();
         }
