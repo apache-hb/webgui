@@ -3,6 +3,8 @@ project('webgui', 'cpp',
         'cpp_std=c++26',
         # Always force fallback so we get the latest version of aws-cpp-sdk
         'wrap_mode=forcefallback',
+        'cpp_eh=none',
+        'cpp_rtti=false',
     ],
 )
 
@@ -20,6 +22,7 @@ aws_cpp_sdk_logs = dependency('aws-cpp-sdk-logs')
 aws_cpp_sdk_iam = dependency('aws-cpp-sdk-iam')
 aws_cpp_sdk_sts = dependency('aws-cpp-sdk-sts')
 aws_cpp_sdk_ecs = dependency('aws-cpp-sdk-ecs')
+aws_cpp_sdk_monitoring = dependency('aws-cpp-sdk-monitoring')
 libcrypto = dependency('libcrypto')
 concurrentqueue = dependency('concurrentqueue')
 sqlite3_dep = dependency('sqlite3')
@@ -31,6 +34,9 @@ src = files(
     'src/gui/imaws.cpp',
     'src/gui/aws/session.cpp',
     'src/gui/aws/window.cpp',
+    'src/gui/aws/windows/monitoring.cpp',
+    'src/gui/aws/session/create_session_panel_default.cpp',
+    'src/gui/aws/session/create_session_panel_config_file.cpp',
     'src/platform/aws.cpp',
 )
 
@@ -45,6 +51,7 @@ deps = [
     aws_cpp_sdk_iam,
     aws_cpp_sdk_sts,
     aws_cpp_sdk_ecs,
+    aws_cpp_sdk_monitoring,
     libcrypto,
     concurrentqueue,
     sqlite3_dep,
@@ -104,4 +111,6 @@ executable('gui', src,
 if host_machine.system() == 'emscripten'
     install_data('assets/index.html', install_dir: get_option('datadir'))
     meson.add_install_script('data/meson/emscripten-install.sh')
+
+    run_target('server', command : [ 'python3', 'serve.py' ])
 endif

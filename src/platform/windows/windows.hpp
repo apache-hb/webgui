@@ -10,5 +10,9 @@ namespace sm {
         static bool begin();
         static void end();
         static void configureAwsSdkOptions(Aws::SDKOptions& options);
+
+        static consteval PlatformType type() {
+            return PlatformType::Windows;
+        }
     };
 }

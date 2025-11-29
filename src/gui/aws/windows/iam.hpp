@@ -17,7 +17,7 @@ namespace ImAws {
 
         ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
 
-        std::string unix_epoch_ms_to_datetime_string(long long epochMs) {
+        static std::string unixEpochMsToDateTimeString(long long epochMs) {
             std::chrono::system_clock::time_point tp{std::chrono::milliseconds{epochMs}};
             return std::format("{0:%Y}-{0:%m}-{0:%d}:{0:%H}:{0:%M}:{0:%S}", tp);
         }
@@ -97,7 +97,7 @@ namespace ImAws {
                     ImAws::ArnTooltip(role.GetArn());
 
                     ImGui::TableSetColumnIndex(2);
-                    auto time = unix_epoch_ms_to_datetime_string(role.GetCreateDate().Millis());
+                    auto time = unixEpochMsToDateTimeString(role.GetCreateDate().Millis());
                     ImGui::TextUnformatted(time.c_str());
                 }
 

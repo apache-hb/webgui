@@ -13,6 +13,24 @@ namespace sm {
         std::array<float, 4> clear;
     };
 
+    enum class PlatformType {
+        Emscripten,
+        Linux,
+        Windows,
+        Darwin,
+        Unknown
+    };
+
+    constexpr bool isDesktopPlatform(PlatformType type) {
+        return type == PlatformType::Linux ||
+               type == PlatformType::Windows ||
+               type == PlatformType::Darwin;
+    }
+
+    constexpr bool isWebPlatform(PlatformType type) {
+        return type == PlatformType::Emscripten;
+    }
+
     struct Platform_Generic {
         [[gnu::error("Platform::setup() Is not implemented for this platform")]]
         static int setup(const PlatformCreateInfo& createInfo);
@@ -29,8 +47,11 @@ namespace sm {
         [[gnu::error("Platform::end() Is not implemented for this platform")]]
         static void end();
 
-        static void configure_aws_sdk_options([[maybe_unused]] Aws::SDKOptions& options) {
+        static void configureAwsSdkOptions([[maybe_unused]] Aws::SDKOptions& options) {
             // Default no-op
         }
+
+        [[gnu::error("Platform::type() Is not implemented for this platform")]]
+        static consteval PlatformType type();
     };
 }

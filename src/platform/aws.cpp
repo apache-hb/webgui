@@ -80,7 +80,7 @@ class ByoCryptoHmac {
         .finalize = finalize,
     };
 
-    static aws_hmac *create_hmac_common(
+    static aws_hmac *createHmacCommon(
         aws_allocator *allocator,
         const aws_byte_cursor *secret,
         size_t digestSize,
@@ -114,8 +114,8 @@ class ByoCryptoHmac {
     }
 
 public:
-    static aws_hmac *create_hmac256(aws_allocator *allocator, const aws_byte_cursor *secret) {
-        return create_hmac_common(
+    static aws_hmac *createHmac256(aws_allocator *allocator, const aws_byte_cursor *secret) {
+        return createHmacCommon(
             allocator,
             secret,
             AWS_SHA256_HMAC_LEN,
@@ -124,8 +124,8 @@ public:
         );
     }
 
-    static aws_hmac *create_hmac512(aws_allocator *allocator, const aws_byte_cursor *secret) {
-        return create_hmac_common(
+    static aws_hmac *createHmac512(aws_allocator *allocator, const aws_byte_cursor *secret) {
+        return createHmacCommon(
             allocator,
             secret,
             AWS_SHA512_HMAC_LEN,
@@ -220,7 +220,7 @@ class ByoCryptoHash {
         .finalize = finalize,
     };
 
-    static aws_hash *create_hash_common(
+    static aws_hash *createHashCommon(
         aws_allocator *allocator,
         size_t digestSize,
         aws_hash_vtable *vtable,
@@ -247,8 +247,8 @@ class ByoCryptoHash {
     }
 
 public:
-    static aws_hash *md5_create(aws_allocator *allocator) {
-        return create_hash_common(
+    static aws_hash *md5Create(aws_allocator *allocator) {
+        return createHashCommon(
             allocator,
             AWS_MD5_LEN,
             &md5Vtable,
@@ -256,8 +256,8 @@ public:
         );
     }
 
-    static aws_hash *sha512_create(aws_allocator *allocator) {
-        return create_hash_common(
+    static aws_hash *sha512Create(aws_allocator *allocator) {
+        return createHashCommon(
             allocator,
             AWS_SHA512_LEN,
             &sha512Vtable,
@@ -265,8 +265,8 @@ public:
         );
     }
 
-    static aws_hash *sha256_create(aws_allocator *allocator) {
-        return create_hash_common(
+    static aws_hash *sha256Create(aws_allocator *allocator) {
+        return createHashCommon(
             allocator,
             AWS_SHA256_LEN,
             &sha256Vtable,
@@ -274,8 +274,8 @@ public:
         );
     }
 
-    static aws_hash *sha1_create(aws_allocator *allocator) {
-        return create_hash_common(
+    static aws_hash *sha1Create(aws_allocator *allocator) {
+        return createHashCommon(
             allocator,
             AWS_SHA1_LEN,
             &sha1Vtable,
@@ -289,11 +289,11 @@ void sm::initAwsByoCrypto() {
 
     auto alloc = aws_default_allocator();
     aws_cal_library_init(alloc);
-    aws_set_sha256_hmac_new_fn(ByoCryptoHmac::create_hmac256);
-    aws_set_sha512_hmac_new_fn(ByoCryptoHmac::create_hmac512);
+    aws_set_sha256_hmac_new_fn(ByoCryptoHmac::createHmac256);
+    aws_set_sha512_hmac_new_fn(ByoCryptoHmac::createHmac512);
 
-    aws_set_md5_new_fn(ByoCryptoHash::md5_create);
-    aws_set_sha256_new_fn(ByoCryptoHash::sha256_create);
-    aws_set_sha512_new_fn(ByoCryptoHash::sha512_create);
-    aws_set_sha1_new_fn(ByoCryptoHash::sha1_create);
+    aws_set_md5_new_fn(ByoCryptoHash::md5Create);
+    aws_set_sha256_new_fn(ByoCryptoHash::sha256Create);
+    aws_set_sha512_new_fn(ByoCryptoHash::sha512Create);
+    aws_set_sha1_new_fn(ByoCryptoHash::sha1Create);
 }

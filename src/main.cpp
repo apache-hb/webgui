@@ -1,15 +1,10 @@
-#include <stdio.h>
-
-#include "aws/sts/STSClient.h"
-#include "aws/sts/model/GetCallerIdentityResult.h"
 #include "gui/aws/session.hpp"
+#include "gui/aws/session/create_session_panel.hpp"
 #include "gui/aws/window.hpp"
 #include "platform/platform.hpp"
 #include "platform/aws.hpp"
 #include "gui/imaws.hpp"
 #include "util/async.hpp"
-
-#include <concurrentqueue.h>
 
 #include <imgui.h>
 #include <implot.h>
@@ -27,6 +22,9 @@
 #include <aws/core/http/standard/StandardHttpRequest.h>
 #include <aws/core/http/standard/StandardHttpResponse.h>
 
+#include <aws/sts/STSClient.h>
+#include <aws/sts/model/GetCallerIdentityResult.h>
+
 #include <aws/logs/CloudWatchLogsClient.h>
 #include <aws/logs/CloudWatchLogsServiceClientModel.h>
 #include <aws/logs/model/DescribeLogGroupsRequest.h>
@@ -34,6 +32,12 @@
 #include <aws/iam/IAMClient.h>
 #include <aws/iam/model/ListRolesRequest.h>
 #include <aws/iam/model/ListPoliciesRequest.h>
+
+using Aws::Client::ClientConfigurationInitValues;
+using Aws::STS::Model::GetCallerIdentityOutcome;
+using Aws::STS::Model::GetCallerIdentityResult;
+using Aws::STS::STSClientConfiguration;
+using Aws::STS::STSClient;
 
 namespace {
     std::vector<std::unique_ptr<ImAws::Session>> gSessions;
@@ -43,17 +47,74 @@ namespace {
     bool gShowAwsSdkInfoWindow = false;
 }
 
-using Aws::STS::Model::GetCallerIdentityOutcome;
-using Aws::STS::Model::GetCallerIdentityResult;
-
 class CreateSessionWindow {
+    static constexpr char kLoginFailedModal[] = "Login Failed";
+
+    std::vector<std::unique_ptr<sm::ICreateSessionPanel>> mPanels;
+
     ImAws::AwsRegion mRegion;
-    ImAws::AwsCredentialState mCredentials;
+    std::shared_ptr<Aws::Auth::AWSCredentialsProvider> mCredentialsProvider;
     sm::AsyncAction<GetCallerIdentityOutcome> mCallerIdentity;
     bool mLoggedIn{false};
     std::string mSessionTitle;
 
+    void drawSinglePanel(sm::ICreateSessionPanel *panel) {
+        bool disabled = panel->isDisabled();
+        ImGui::BeginDisabled(disabled);
+
+        if (ImGui::BeginTabItem(panel->getName().data())) {
+            bool allowLoginAttempt = panel->render();
+            bool isWorking = mCallerIdentity.isWorking();
+
+            const char *label = isWorking ? "Logging in..." : "Login";
+            ImGui::BeginDisabled(!allowLoginAttempt || isWorking);
+
+            if (ImGui::Button(label)) {
+                mCredentialsProvider = panel->getCredentialsProvider();
+
+                mCallerIdentity.run([this] {
+                    ClientConfigurationInitValues clientConfigInitValues;
+                    clientConfigInitValues.shouldDisableIMDS = true;
+
+                    STSClientConfiguration config{clientConfigInitValues};
+                    config.region = mRegion.getSelectedRegionId();
+
+                    STSClient stsClient{mCredentialsProvider, config};
+                    return stsClient.GetCallerIdentity({});
+                });
+            }
+
+            ImGui::EndDisabled();
+
+            ImGui::EndTabItem();
+        }
+
+        if (disabled && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
+            std::string_view reason = panel->getDisabledReason();
+            ImGui::SetTooltip("%.*s", static_cast<int>(reason.size()), reason.data());
+        }
+
+        ImGui::EndDisabled();
+    }
+
+    void loginFailedModal(const GetCallerIdentityOutcome& outcome) {
+        ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_FirstUseEver);
+        if (ImGui::BeginPopupModal(kLoginFailedModal)) {
+            ImAws::ApiErrorTooltip(outcome.GetError());
+            if (ImGui::Button("OK")) {
+                mCallerIdentity.clear();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+
 public:
+    CreateSessionWindow() {
+        mPanels.emplace_back(sm::CreateSessionPanel_ForConfigFile());
+        mPanels.emplace_back(sm::CreateSessionPanel_ForDefault());
+    }
+
     bool render() {
         if (mCallerIdentity.isComplete()) {
             auto outcome = mCallerIdentity.getResult();
@@ -62,39 +123,19 @@ public:
                 auto result = outcome.GetResult();
                 mSessionTitle = std::format("Session - {}", result.GetArn());
             } else {
-                ImGui::OpenPopup("Login Failed");
+                ImGui::OpenPopup(kLoginFailedModal);
             }
 
-            if (ImGui::BeginPopupModal("Login Failed")) {
-                ImAws::ApiErrorTooltip(outcome.GetError());
-                if (ImGui::Button("OK")) {
-                    mCallerIdentity.clear();
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndPopup();
-            }
+            loginFailedModal(outcome);
         }
 
         if (ImGui::Begin("Create AWS Session")) {
-            ImAws::RegionCombo("##Region", &mRegion, ImGuiComboFlags_WidthFitPreview);
-            ImGui::SameLine();
-            ImAws::InputCredentials(&mCredentials);
-
-            ImGui::BeginDisabled(mCallerIdentity.isWorking());
-            const char *label = mCallerIdentity.isWorking() ? "Logging in..." : "Login";
-            if (ImGui::Button(label)) {
-                mCallerIdentity.run([this, provider = mCredentials.createProvider()]() {
-                    Aws::Client::ClientConfigurationInitValues clientConfigInitValues;
-                    clientConfigInitValues.shouldDisableIMDS = true;
-
-                    Aws::STS::STSClientConfiguration config{clientConfigInitValues};
-                    config.region = mRegion.getSelectedRegionId();
-
-                    Aws::STS::STSClient stsClient{provider, config};
-                    return stsClient.GetCallerIdentity({});
-                });
+            if (ImGui::BeginTabBar("Credential Panels")) {
+                for (auto& panel : mPanels) {
+                    drawSinglePanel(panel.get());
+                }
+                ImGui::EndTabBar();
             }
-            ImGui::EndDisabled();
         }
         ImGui::End();
 
@@ -114,7 +155,7 @@ public:
     }
 
     std::shared_ptr<Aws::Auth::AWSCredentialsProvider> createProvider() const {
-        return mCredentials.createProvider();
+        return mCredentialsProvider;
     }
 
     void reset() {

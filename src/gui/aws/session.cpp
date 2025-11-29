@@ -1,6 +1,7 @@
 #include "session.hpp"
 #include "gui/aws/windows/cwl.hpp"
 #include "gui/aws/windows/iam.hpp"
+#include "gui/aws/windows/monitoring.hpp"
 #include "window.hpp"
 
 #include "gui/imaws.hpp"
@@ -21,6 +22,10 @@ void ImAws::Session::drawSessionInfo() {
 
         if (ImGui::Button("CloudWatch Logs")) {
             mWindows.push_back(std::make_unique<ImAws::CloudWatchLogsPanel>(this, "CloudWatch Logs"));
+        }
+
+        if (ImGui::Button("CloudWatch Monitoring")) {
+            mWindows.push_back(std::make_unique<ImAws::MonitoringPanel>(this, "CloudWatch Monitoring"));
         }
 
         if (ImGui::Button("IAM")) {
