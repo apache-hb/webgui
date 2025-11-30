@@ -47,6 +47,7 @@ void ImAws::MonitoringPanel::fetchMetricData(const Metric& metric) {
         Aws::CloudWatch::Model::MetricDataQuery query;
         query.SetId("metric");
         query.SetMetricStat(metricStat);
+        query.SetPeriod(60);
 
         Aws::CloudWatch::Model::GetMetricDataRequest request;
         request.SetStartTime(now.Millis() - 3600 * 1000); // 1 hour ago
