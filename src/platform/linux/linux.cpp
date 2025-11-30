@@ -30,7 +30,6 @@ namespace {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
         float scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
-        fprintf(stderr, "Content scale: %f\n", scale);
         if (scale <= 0.0f) {
             scale = 1.0f;
         }
