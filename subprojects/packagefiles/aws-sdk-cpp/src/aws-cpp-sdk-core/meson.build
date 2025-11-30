@@ -158,7 +158,6 @@ curl_http_src = files(
 windows_http_src = files(
     'source/http/windows/WinHttpConnectionPoolMgr.cpp',
     'source/http/windows/WinConnectionPoolMgr.cpp',
-    'source/http/windows/IXmlHttpRequest2HttpClient.cpp',
     'source/http/windows/WinINetSyncHttpClient.cpp',
     'source/http/windows/WinSyncHttpClient.cpp',
     'source/http/windows/WinINetConnectionPoolMgr.cpp',
@@ -217,6 +216,17 @@ endif
 
 if host_machine.system() == 'windows'
     src += windows_src + windows_http_src + windows_net_src
+    deps += [
+        cpp.find_library('wininet', required: false),
+        cpp.find_library('winhttp', required: false),
+        cpp.find_library('ws2_32', required: false),
+        cpp.find_library('userenv', required: false),
+        cpp.find_library('version', required: false),
+    ]
+    cpp_args += [
+        '-DENABLE_WINDOWS_CLIENT=1',
+        '-DAWS_SDK_USE_CRT_HTTP=1',
+    ]
 elif host_machine.system() == 'android'
     src += android_src + curl_http_src
     deps += [curl]

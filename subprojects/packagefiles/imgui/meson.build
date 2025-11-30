@@ -1,5 +1,7 @@
 project('imgui', 'cpp')
 
+cpp = meson.get_compiler('cpp')
+
 src = files(
     'imgui_demo.cpp',
     'imgui_draw.cpp',
@@ -11,7 +13,7 @@ src = files(
 
 inc = include_directories('backends', '.')
 
-libimgui = library('imgui', src,
+libimgui = static_library('imgui', src,
     include_directories: inc,
     install: true
 )
@@ -34,7 +36,7 @@ if host_machine.system() in ['linux', 'emscripten']
     glfw_dep = dependency('glfw3', required: host_machine.system() == 'linux')
 
     src = files('backends/imgui_impl_glfw.cpp')
-    libimgui_impl_glfw = library('imgui_impl_glfw', src,
+    libimgui_impl_glfw = static_library('imgui_impl_glfw', src,
         dependencies: [imgui_dep, glfw_dep],
         include_directories: inc,
         build_by_default: false
@@ -46,7 +48,7 @@ if host_machine.system() in ['linux', 'emscripten']
     )
 
     src = files('backends/imgui_impl_opengl3.cpp')
-    libimgui_impl_opengl3 = library('imgui_impl_opengl3', src,
+    libimgui_impl_opengl3 = static_library('imgui_impl_opengl3', src,
         dependencies: imgui_dep,
         include_directories: inc,
         build_by_default: false
@@ -57,7 +59,7 @@ if host_machine.system() in ['linux', 'emscripten']
     )
 elif host_machine.system() == 'windows'
     src = files('backends/imgui_impl_win32.cpp')
-    libimgui_impl_win32 = library('imgui_impl_win32', src,
+    libimgui_impl_win32 = static_library('imgui_impl_win32', src,
         dependencies: imgui_dep,
         include_directories: inc,
         build_by_default: false
@@ -67,9 +69,12 @@ elif host_machine.system() == 'windows'
         link_with: libimgui_impl_win32
     )
 
+    dxgi_dep = cpp.find_library('dxgi')
+    d3d12_dep = cpp.find_library('d3d12')
+
     src = files('backends/imgui_impl_dx12.cpp')
-    libimgui_impl_dx12 = library('imgui_impl_dx12', src,
-        dependencies: imgui_dep,
+    libimgui_impl_dx12 = static_library('imgui_impl_dx12', src,
+        dependencies: [imgui_dep, dxgi_dep, d3d12_dep],
         include_directories: inc,
         build_by_default: false
     )
@@ -79,7 +84,7 @@ elif host_machine.system() == 'windows'
     )
 elif host_machine.system() == 'darwin'
     src = files('backends/imgui_impl_osx.mm')
-    libimgui_impl_osx = library('imgui_impl_osx', src,
+    libimgui_impl_osx = static_library('imgui_impl_osx', src,
         dependencies: imgui_dep,
         include_directories: inc,
         build_by_default: false
@@ -90,7 +95,7 @@ elif host_machine.system() == 'darwin'
     )
 
     src = files('backends/imgui_impl_metal.mm')
-    libimgui_impl_metal = library('imgui_impl_metal', src,
+    libimgui_impl_metal = static_library('imgui_impl_metal', src,
         dependencies: imgui_dep,
         include_directories: inc,
         build_by_default: false

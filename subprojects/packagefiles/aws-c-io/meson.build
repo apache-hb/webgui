@@ -8,11 +8,37 @@ cc = meson.get_compiler('c')
 
 aws_c_common_dep = dependency('aws-c-common')
 aws_c_cal_dep = dependency('aws-c-cal')
-upoll_dep = dependency('upoll', required: host_machine.system() == 'emscripten')
-s2n_tls_dep = dependency('s2n-tls', required: byo_crypto.disabled())
+
+if host_machine.system() == 'emscripten'
+    upoll_dep = dependency('upoll')
+else
+    upoll_dep = declare_dependency()
+endif
+
+s2n_tls_dep = dependency('s2n-tls', required: byo_crypto.disabled() and host_machine.system() != 'windows')
 
 m = cc.find_library(
   'm',
+  required: false,
+)
+
+ncrypt = cc.find_library(
+  'ncrypt',
+  required: false,
+)
+
+wsa2_32 = cc.find_library(
+  'ws2_32',
+  required: false,
+)
+
+crypt32 = cc.find_library(
+  'crypt32',
+  required: false,
+)
+
+secur32 = cc.find_library(
+  'secur32',
   required: false,
 )
 
@@ -87,7 +113,7 @@ emscripten_src = files(
 c_args = ['-DAWS_IO_EXPORTS=1']
 public_inc = include_directories('include')
 inc = [public_inc]
-deps = [aws_c_common_dep, aws_c_cal_dep, upoll_dep, m]
+deps = [aws_c_common_dep, aws_c_cal_dep, upoll_dep, m, ncrypt, wsa2_32, crypt32, secur32]
 
 if host_machine.system() == 'linux'
     src += linux_src + posix_src
@@ -111,7 +137,7 @@ c_args += [ '-DINTEL_NO_ITTNOTIFY_API=1' ]
 
 if byo_crypto.allowed()
     c_args += [ '-DBYO_CRYPTO=1' ]
-else
+elif s2n_tls_dep.found()
     src += s2n_src
     c_args += [ '-DUSE_S2N=1' ]
     deps += s2n_tls_dep

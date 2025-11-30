@@ -62,11 +62,10 @@ src = files(
   'source/cal.c',
   'source/der.c',
   'source/ecc.c',
-  'source/ed25519.c',
   'source/hash.c',
-  'source/hkdf.c',
   'source/hmac.c',
   'source/rsa.c',
+  'source/hkdf.c',
   'source/shared/ref_hkdf.c',
   'source/symmetric_cipher.c',
 )
@@ -79,7 +78,10 @@ if libcrypto_dep.found()
   src += files('source/shared/ed25519.c', 'source/shared/lccrypto_common.c')
   c_args += ['-DAWS_USE_LIBCRYPTO_TO_SUPPORT_ED25519_EVERYWHERE']
 else
-  src += files('source/shared/ed25519_noop.c')
+  src += files(
+    'source/ed25519.c',
+    'source/shared/ed25519_noop.c'
+  )
 endif
 
 if not byo_crypto.allowed()

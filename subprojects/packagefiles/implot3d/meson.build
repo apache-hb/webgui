@@ -11,7 +11,7 @@ imgui_dep = dependency('imgui')
 
 inc = include_directories('.')
 
-libimplot3d = library(
+libimplot3d = static_library(
     'implot3d',
     src,
     include_directories: inc,

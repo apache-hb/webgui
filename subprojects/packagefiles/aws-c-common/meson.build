@@ -151,6 +151,7 @@ elif host_machine.system() == 'linux'
 elif host_machine.system() == 'windows'
   platform_src = files(
     'source/platform_fallback_stubs/system_info.c',
+    'source/platform_fallback_stubs/file_direct_io.c',
     'source/windows/clock.c',
     'source/windows/condition_variable.c',
     'source/windows/cross_process_lock.c',

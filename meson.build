@@ -1,6 +1,6 @@
 project('webgui', 'cpp',
     default_options: [
-        'cpp_std=c++26',
+        'cpp_std=c++26,c++latest',
         # Always force fallback so we get the latest version of aws-cpp-sdk
         'wrap_mode=forcefallback',
         'cpp_eh=none',
@@ -10,12 +10,25 @@ project('webgui', 'cpp',
 
 cpp = meson.get_compiler('cpp')
 
+deps = []
+
 imgui_dep = dependency('imgui')
 implot_dep = dependency('implot')
 implot3d_dep = dependency('implot3d')
 
-imgui_backend_glfw_dep = dependency('imgui-backend-glfw')
-imgui_backend_opengl3_dep = dependency('imgui-backend-opengl3')
+if host_machine.system() in ['emscripten', 'linux']
+    deps += [
+        dependency('imgui-backend-glfw'),
+        dependency('imgui-backend-opengl3'),
+    ]
+elif host_machine.system() == 'windows'
+    deps += [
+        dependency('imgui-backend-win32'),
+        dependency('imgui-backend-dx12'),
+        cpp.find_library('d3d12'),
+        cpp.find_library('dxgi'),
+    ]
+endif
 
 aws_cpp_sdk_core = dependency('aws-cpp-sdk-core')
 aws_cpp_sdk_logs = dependency('aws-cpp-sdk-logs')
@@ -40,12 +53,10 @@ src = files(
     'src/platform/aws.cpp',
 )
 
-deps = [
+deps += [
     imgui_dep,
     implot_dep,
     implot3d_dep,
-    imgui_backend_glfw_dep,
-    imgui_backend_opengl3_dep,
     aws_cpp_sdk_core,
     aws_cpp_sdk_logs,
     aws_cpp_sdk_iam,
@@ -105,7 +116,7 @@ executable('gui', src,
     dependencies: deps,
     install: true,
     install_dir: exe_install_dir,
-    override_options: ['cpp_std=c++26'],
+    override_options: ['cpp_std=c++26,c++latest'],
 )
 
 if host_machine.system() == 'emscripten'
