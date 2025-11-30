@@ -123,5 +123,5 @@ if host_machine.system() == 'emscripten'
     install_data('assets/index.html', install_dir: get_option('datadir'))
     meson.add_install_script('data/meson/emscripten-install.sh')
 
-    run_target('server', command : [ 'python3', 'serve.py' ])
+    run_target('server', command : [ 'python3', '@CURRENT_SOURCE_DIR@/data/python/serve.py', get_option('prefix') / get_option('datadir') ])
 endif
