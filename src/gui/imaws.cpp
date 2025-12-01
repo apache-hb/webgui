@@ -219,8 +219,8 @@ namespace {
     std::string formatErrorText(
         int httpStatusCode,
         int errorType,
-        const char *exceptionName,
-        const char *message,
+        std::string_view exceptionName,
+        std::string_view message,
         const Aws::Http::HeaderValueCollection& headers,
         const ImAws::PayloadBody& payload
     ) {
@@ -262,11 +262,11 @@ namespace {
 }
 
 void ImAws::detail::ApiErrorTooltipImpl(
-    const char *xAmzRequestId,
+    std::string_view xAmzRequestId,
     int httpStatusCode,
     int errorType,
-    const char *exceptionName,
-    const char *message,
+    std::string_view exceptionName,
+    std::string_view message,
     const Aws::Http::HeaderValueCollection& headers,
     const ImAws::PayloadBody& payload
 ) {
@@ -274,7 +274,7 @@ void ImAws::detail::ApiErrorTooltipImpl(
 
     float width = ImGui::GetWindowWidth() - ImGui::GetStyle().WindowPadding.x * 2;
     ImGui::PushTextWrapPos(width);
-    ImGui::TextColored(errorColour, "%s: %s", exceptionName, message);
+    ImGui::TextColored(errorColour, "%.*s: %.*s", (int)exceptionName.size(), exceptionName.data(), (int)message.size(), message.data());
     ImGui::PopTextWrapPos();
 
     if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
@@ -292,7 +292,7 @@ void ImAws::detail::ApiErrorTooltipImpl(
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
         ImGui::SetNextWindowSize(ImVec2(width, 0), ImGuiCond_Appearing);
         if (ImGui::BeginTooltipEx(ImGuiTooltipFlags_None, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("X-Amz-RequestId: %s", xAmzRequestId);
+            ImGui::Text("X-Amz-RequestId: %.*s", (int)xAmzRequestId.size(), xAmzRequestId.data());
             ImGui::Text("HTTP Status Code: %d", httpStatusCode);
             ImGui::Text("Error Type: %d", errorType);
 

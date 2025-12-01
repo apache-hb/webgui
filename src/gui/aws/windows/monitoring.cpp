@@ -1,12 +1,16 @@
 #include "monitoring.hpp"
-#include "aws/monitoring/model/GetMetricDataRequest.h"
-#include "aws/monitoring/model/MetricStat.h"
+
 #include "gui/imaws.hpp"
 
+#include <aws/monitoring/model/MetricStat.h>
+#include <aws/monitoring/model/GetMetricDataRequest.h>
 #include <aws/monitoring/model/MetricDataQuery.h>
 #include <aws/monitoring/model/StandardUnit.h>
+
 #include <imgui.h>
 #include <implot.h>
+
+#include <print>
 
 static constexpr ImGuiTreeNodeFlags kDefaultFlags
     = ImGuiTreeNodeFlags_OpenOnArrow
@@ -40,16 +44,15 @@ void ImAws::MonitoringPanel::fetchMetricData(const Metric& metric) {
 
         Aws::CloudWatch::Model::MetricStat metricStat;
         metricStat.SetMetric(metric);
-        metricStat.SetPeriod(60);
+        metricStat.SetPeriod(300);
         metricStat.SetStat("Average");
-        metricStat.SetUnit(Aws::CloudWatch::Model::StandardUnit::None);
 
         Aws::CloudWatch::Model::MetricDataQuery query;
         query.SetId("metric");
         query.SetMetricStat(metricStat);
 
         Aws::CloudWatch::Model::GetMetricDataRequest request;
-        request.SetStartTime(now.Millis() - 3600 * 1000); // 1 hour ago
+        request.SetStartTime(now.Millis() - (3600 * 1000 * 24 * 3)); // 3 days ago
         request.SetEndTime(now);
         request.AddMetricDataQueries(query);
         request.SetMaxDatapoints(500);
@@ -175,7 +178,7 @@ void ImAws::MonitoringPanel::draw() {
 
     if (auto next = mMetricDataFetch.pullItem()) {
         for (const auto& result : next->GetMetricDataResults()) {
-            if (result.GetId() == mMetricName) {
+            if (result.GetId() == "metric") {
                 for (const auto& timestamp : result.GetTimestamps()) {
                     mPlotXData.push_back(static_cast<float>(timestamp.Millis() / 1000.0));
                 }
@@ -194,7 +197,8 @@ void ImAws::MonitoringPanel::draw() {
         if (!mPlotXData.empty() && !mPlotYData.empty()) {
             ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
             assert(mPlotXData.size() == mPlotYData.size());
-            ImPlot::PlotLine(mMetricName.c_str(), mPlotXData.data(), mPlotYData.data(), static_cast<int>(mPlotXData.size()));
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+            ImPlot::PlotLine(mMetricName.c_str(), mPlotXData.data(), mPlotYData.data(), static_cast<int>(mPlotXData.size()), ImPlotLineFlags_Segments);
         }
 
         ImPlot::EndPlot();

@@ -80,11 +80,11 @@ namespace ImAws {
 
     namespace detail {
         void ApiErrorTooltipImpl(
-            const char *xAmzRequestId,
+            std::string_view xAmzRequestId,
             int httpStatusCode,
             int errorType,
-            const char *exceptionName,
-            const char *message,
+            std::string_view exceptionName,
+            std::string_view message,
             const Aws::Http::HeaderValueCollection& headers,
             const PayloadBody& payload
         );
