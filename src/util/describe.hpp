@@ -77,6 +77,11 @@ namespace sm {
             mHasError.store(true);
         }
 
+        void clear() {
+            mHasError.store(false);
+            mLastError.reset();
+        }
+
         template<typename F>
         void run(F&& fn) {
             reset();

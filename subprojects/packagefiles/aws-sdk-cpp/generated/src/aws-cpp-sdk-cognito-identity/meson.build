@@ -86,3 +86,10 @@ aws_cpp_sdk_cognito_identity_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-cognito-identity', aws_cpp_sdk_cognito_identity_dep)
+
+pkgs += {
+    'aws-cpp-sdk-cognito-identity': {
+        'lib': libaws_cpp_sdk_cognito_identity,
+        'extra_cflags': public_cpp_args,
+    }
+}

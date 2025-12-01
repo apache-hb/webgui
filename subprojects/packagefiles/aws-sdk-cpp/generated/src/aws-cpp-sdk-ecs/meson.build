@@ -376,3 +376,10 @@ aws_cpp_sdk_ecs_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-ecs', aws_cpp_sdk_ecs_dep)
+
+pkgs += {
+    'aws-cpp-sdk-ecs': {
+        'lib': libaws_cpp_sdk_ecs,
+        'extra_cflags': public_cpp_args,
+    }
+}

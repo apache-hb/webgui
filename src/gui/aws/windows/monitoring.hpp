@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gui/aws/errors.hpp"
 #include "gui/aws/window.hpp"
 #include "util/stream.hpp"
 
@@ -31,6 +32,7 @@ namespace ImAws {
         using MetricSetIterator = MetricSet::iterator;
         using MetricMapIterator = MetricMap::iterator;
 
+        sm::ErrorPanel mErrorPanel;
         sm::AsyncStream<Metric, CloudWatchError> mMetricDescribe;
         MetricMap mAwsMetrics;
         MetricMap mUserMetrics;

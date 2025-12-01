@@ -368,3 +368,10 @@ aws_cpp_sdk_iam_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-iam', aws_cpp_sdk_iam_dep)
+
+pkgs += {
+    'aws-cpp-sdk-iam': {
+        'lib': libaws_cpp_sdk_iam,
+        'extra_cflags': public_cpp_args,
+    }
+}

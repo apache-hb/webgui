@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gui/aws/errors.hpp"
 #include "gui/aws/window.hpp"
 #include "gui/imaws.hpp"
 #include "util/describe.hpp"
@@ -14,6 +15,7 @@ namespace ImAws {
         using CwlError = Aws::CloudWatchLogs::CloudWatchLogsError;
 
         sm::AsyncDescribe<LogGroup, CwlError> mLogGroupDescribe;
+        sm::ErrorPanel mErrorPanel;
 
         ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
 
@@ -75,9 +77,11 @@ namespace ImAws {
             ImGui::EndDisabled();
 
             if (mLogGroupDescribe.hasError()) {
-                ImGui::SameLine();
-                ImAws::ApiErrorTooltip(mLogGroupDescribe.error());
+                mErrorPanel.addError(mLogGroupDescribe.error());
+                mLogGroupDescribe.clear();
             }
+
+            mErrorPanel.draw();
 
             auto logGroups = mLogGroupDescribe.getItems();
 

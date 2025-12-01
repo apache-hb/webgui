@@ -60,3 +60,10 @@ aws_cpp_sdk_sts_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-sts', aws_cpp_sdk_sts_dep)
+
+pkgs += {
+    'aws-cpp-sdk-sts': {
+        'lib': libaws_cpp_sdk_sts,
+        'extra_cflags': public_cpp_args,
+    }
+}

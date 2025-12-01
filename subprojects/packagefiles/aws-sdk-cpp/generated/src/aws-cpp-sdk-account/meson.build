@@ -68,3 +68,10 @@ aws_cpp_sdk_account_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-account', aws_cpp_sdk_account_dep)
+
+pkgs += {
+    'aws-cpp-sdk-account': {
+        'lib': libaws_cpp_sdk_account,
+        'extra_cflags': public_cpp_args,
+    }
+}

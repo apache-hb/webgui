@@ -159,3 +159,10 @@ aws_cpp_sdk_monitoring_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-monitoring', aws_cpp_sdk_monitoring_dep)
+
+pkgs += {
+    'aws-cpp-sdk-monitoring': {
+        'lib': libaws_cpp_sdk_monitoring,
+        'extra_cflags': public_cpp_args,
+    }
+}

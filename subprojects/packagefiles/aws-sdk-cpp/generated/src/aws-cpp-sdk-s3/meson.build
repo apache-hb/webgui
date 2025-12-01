@@ -436,3 +436,10 @@ aws_cpp_sdk_s3_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-s3', aws_cpp_sdk_s3_dep)
+
+pkgs += {
+    'aws-cpp-sdk-s3': {
+        'lib': libaws_cpp_sdk_s3,
+        'extra_cflags': public_cpp_args,
+    }
+}

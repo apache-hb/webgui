@@ -8,6 +8,7 @@
 #include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/core/utils/memory/stl/AWSString.h>
 #include <aws/core/client/AWSError.h>
+#include <variant>
 
 namespace ImAws {
     class AwsRegion;
@@ -75,6 +76,8 @@ namespace ImAws {
 // -- Implementation --
 
 namespace ImAws {
+    using PayloadBody = std::variant<std::monostate, Aws::Utils::Xml::XmlDocument, Aws::Utils::Json::JsonValue>;
+
     namespace detail {
         void ApiErrorTooltipImpl(
             const char *xAmzRequestId,
@@ -83,52 +86,51 @@ namespace ImAws {
             const char *exceptionName,
             const char *message,
             const Aws::Http::HeaderValueCollection& headers,
-            const Aws::String& xmlPayload,
-            const Aws::String& jsonPayload
+            const PayloadBody& payload
         );
+
+        template<typename E>
+        ImAws::PayloadBody extractPayload(const Aws::Client::AWSError<E>& error) {
+            //
+            // Slight bodge to gain access to protected members
+            //
+            using ErrorType = Aws::Client::AWSError<E>;
+            class WrapperError : public ErrorType {
+            public:
+                WrapperError(const ErrorType& rhs)
+                    : ErrorType(rhs)
+                { }
+
+                using ErrorType::GetErrorPayloadType;
+                using ErrorType::GetXmlPayload;
+                using ErrorType::GetJsonPayload;
+            };
+
+            WrapperError wrapperError{error};
+
+            switch (wrapperError.GetErrorPayloadType()) {
+            case Aws::Client::ErrorPayloadType::XML:
+                return wrapperError.GetXmlPayload();
+            case Aws::Client::ErrorPayloadType::JSON:
+                return wrapperError.GetJsonPayload();
+            default:
+                return std::monostate{};
+            }
+        }
     }
 
     template<typename T>
     void ApiErrorTooltip(const Aws::Client::AWSError<T>& error) {
-        //
-        // Slight bodge to gain access to protected members
-        //
-        using ErrorType = Aws::Client::AWSError<T>;
-        class WrapperError : public ErrorType {
-        public:
-            WrapperError(const ErrorType& rhs)
-                : ErrorType(rhs)
-            { }
-
-            using ErrorType::GetErrorPayloadType;
-            using ErrorType::GetXmlPayload;
-            using ErrorType::GetJsonPayload;
-        };
-
-        WrapperError wrapperError{error};
-
-        Aws::String xmlPayload;
-        Aws::String jsonPayload;
-        switch (wrapperError.GetErrorPayloadType()) {
-        case Aws::Client::ErrorPayloadType::XML:
-            xmlPayload = wrapperError.GetXmlPayload().ConvertToString();
-            break;
-        case Aws::Client::ErrorPayloadType::JSON:
-            jsonPayload = wrapperError.GetJsonPayload().View().WriteReadable();
-            break;
-        default:
-            break;
-        }
+        auto payload = detail::extractPayload(error);
 
         detail::ApiErrorTooltipImpl(
-            wrapperError.GetRequestId().c_str(),
-            static_cast<int>(wrapperError.GetResponseCode()),
-            static_cast<int>(wrapperError.GetErrorType()),
-            wrapperError.GetExceptionName().c_str(),
-            wrapperError.GetMessage().c_str(),
-            wrapperError.GetResponseHeaders(),
-            xmlPayload,
-            jsonPayload
+            error.GetRequestId().c_str(),
+            static_cast<int>(error.GetResponseCode()),
+            static_cast<int>(error.GetErrorType()),
+            error.GetExceptionName().c_str(),
+            error.GetMessage().c_str(),
+            error.GetResponseHeaders(),
+            payload
         );
     }
 }

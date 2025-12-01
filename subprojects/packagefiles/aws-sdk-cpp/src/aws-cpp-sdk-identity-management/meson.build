@@ -32,8 +32,10 @@ aws_cpp_sdk_identity_management_dep = declare_dependency(
 
 meson.override_dependency('aws-cpp-sdk-identity-management', aws_cpp_sdk_identity_management_dep)
 
-pkg.generate(
-    libaws_cpp_sdk_identity_management,
-    extra_cflags: public_cpp_args,
-    description: 'High-level C++ SDK for identity management against AWS',
-)
+pkgs += {
+    'aws-cpp-sdk-identity-management': {
+        'lib': libaws_cpp_sdk_identity_management,
+        'extra_cflags': public_cpp_args,
+        'description': 'High-level C++ SDK for identity management against AWS',
+    }
+}

@@ -159,16 +159,20 @@ void ImAws::MonitoringPanel::draw() {
         }
     }
 
+    if (mMetricDescribe.hasError()) {
+        mErrorPanel.addError(mMetricDescribe.error());
+        mMetricDescribe.clear();
+    }
+
+    if (mMetricDataFetch.hasError()) {
+        mErrorPanel.addError(mMetricDataFetch.error());
+        mMetricDataFetch.clear();
+    }
+
     ImGui::SameLine();
     ImGui::Text("Data Points: %zu", mPlotXData.size());
 
-    if (mMetricDescribe.hasError()) {
-        ImGui::SameLine();
-        ImAws::ApiErrorTooltip(mMetricDescribe.error());
-    } else if (mMetricDataFetch.hasError()) {
-        ImGui::SameLine();
-        ImAws::ApiErrorTooltip(mMetricDataFetch.error());
-    }
+    mErrorPanel.draw();
 
     if (auto next = mMetricDataFetch.pullItem()) {
         for (const auto& result : next->GetMetricDataResults()) {

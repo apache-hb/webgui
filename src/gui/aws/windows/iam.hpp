@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gui/aws/errors.hpp"
 #include "gui/aws/window.hpp"
 #include "gui/imaws.hpp"
 #include "util/describe.hpp"
@@ -14,6 +15,7 @@ namespace ImAws {
         using IamError = Aws::IAM::IAMError;
 
         sm::AsyncDescribe<Role, IamError> mRoleDescribe;
+        sm::ErrorPanel mErrorPanel;
 
         ImGuiTableFlags mTableFlags{ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV};
 
@@ -76,9 +78,11 @@ namespace ImAws {
             ImGui::EndDisabled();
 
             if (mRoleDescribe.hasError()) {
-                ImGui::SameLine();
-                ImAws::ApiErrorTooltip(mRoleDescribe.error());
+                mErrorPanel.addError(mRoleDescribe.error());
+                mRoleDescribe.clear();
             }
+
+            mErrorPanel.draw();
 
             auto roles = mRoleDescribe.getItems();
 

@@ -234,3 +234,10 @@ aws_cpp_sdk_route53_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-route53', aws_cpp_sdk_route53_dep)
+
+pkgs += {
+    'aws-cpp-sdk-route53': {
+        'lib': libaws_cpp_sdk_route53,
+        'extra_cflags': public_cpp_args,
+    }
+}

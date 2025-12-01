@@ -180,6 +180,14 @@ ImAws::WindowHandle ImAws::Begin(const char *name, bool *p_open, ImGuiWindowFlag
     return WindowHandle{ImGui::Begin(name, p_open, flags)};
 }
 
+template<typename... T>
+struct overloaded : T... {
+    using T::operator()...;
+};
+
+template<typename... T>
+overloaded(T...) -> overloaded<T...>;
+
 namespace {
     std::string escapeText(std::string_view text) {
         std::string escaped;
@@ -214,8 +222,7 @@ namespace {
         const char *exceptionName,
         const char *message,
         const Aws::Http::HeaderValueCollection& headers,
-        const Aws::String& xmlPayload,
-        const Aws::String& jsonPayload
+        const ImAws::PayloadBody& payload
     ) {
         std::stringstream ss;
         ss << std::format("[{}]\n", exceptionName);
@@ -233,13 +240,22 @@ namespace {
         }
         ss << "}\n";
 
-        if (!xmlPayload.empty()) {
-            ss << std::format("xml = \"{}\"\n", escapeText(xmlPayload));
-        }
-
-        if (!jsonPayload.empty()) {
-            ss << std::format("json = \"{}\"\n", escapeText(jsonPayload));
-        }
+        std::visit(overloaded {
+            [&](const Aws::Utils::Xml::XmlDocument& xmlPayload) {
+                if (!xmlPayload.WasParseSuccessful()) {
+                    return;
+                }
+                ss << std::format("xml = \"{}\"\n", escapeText(xmlPayload.ConvertToString()));
+            },
+            [&](const Aws::Utils::Json::JsonValue& jsonPayload) {
+                if (jsonPayload.WasParseSuccessful()) {
+                    ss << std::format("json = \"{}\"\n", escapeText(jsonPayload.View().WriteReadable()));
+                }
+            },
+            [&](std::monostate) {
+                // No payload
+            }
+        }, payload);
 
         return ss.str();
     }
@@ -252,8 +268,7 @@ void ImAws::detail::ApiErrorTooltipImpl(
     const char *exceptionName,
     const char *message,
     const Aws::Http::HeaderValueCollection& headers,
-    const Aws::String& xmlPayload,
-    const Aws::String& jsonPayload
+    const ImAws::PayloadBody& payload
 ) {
     ImVec4 errorColour{1.0f, 0.0f, 0.0f, 1.0f};
 
@@ -269,8 +284,7 @@ void ImAws::detail::ApiErrorTooltipImpl(
             exceptionName,
             message,
             headers,
-            xmlPayload,
-            jsonPayload
+            payload
         );
         ImGui::SetClipboardText(text.c_str());
     }
@@ -300,15 +314,25 @@ void ImAws::detail::ApiErrorTooltipImpl(
                 ImGui::EndTable();
             }
 
-            if (xmlPayload.empty() && jsonPayload.empty()) {
-                ImGui::TextUnformatted("No error payload");
-            } else if (!xmlPayload.empty()) {
-                ImGui::SeparatorText("XML");
-                ImGui::TextWrapped("%s", xmlPayload.c_str());
-            } else if (!jsonPayload.empty()) {
-                ImGui::SeparatorText("JSON");
-                ImGui::TextWrapped("%s", jsonPayload.c_str());
-            }
+            std::visit(overloaded {
+                [&](const Aws::Utils::Xml::XmlDocument& xmlPayload) {
+                    if (!xmlPayload.WasParseSuccessful()) {
+                        return;
+                    }
+                    ImGui::SeparatorText("XML");
+                    ImGui::TextWrapped("%s", xmlPayload.ConvertToString().c_str());
+                },
+                [&](const Aws::Utils::Json::JsonValue& jsonPayload) {
+                    if (!jsonPayload.WasParseSuccessful()) {
+                        return;
+                    }
+                    ImGui::SeparatorText("JSON");
+                    ImGui::TextWrapped("%s", jsonPayload.View().WriteReadable().c_str());
+                },
+                [&](std::monostate) {
+                    ImGui::TextUnformatted("No error payload");
+                }
+            }, payload);
 
             ImGui::EndTooltip();
         }

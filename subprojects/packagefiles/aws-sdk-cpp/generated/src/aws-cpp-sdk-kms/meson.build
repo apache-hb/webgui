@@ -166,3 +166,10 @@ aws_cpp_sdk_kms_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-kms', aws_cpp_sdk_kms_dep)
+
+pkgs += {
+    'aws-cpp-sdk-kms': {
+        'lib': libaws_cpp_sdk_kms,
+        'extra_cflags': public_cpp_args,
+    }
+}

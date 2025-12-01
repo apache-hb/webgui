@@ -118,3 +118,10 @@ aws_cpp_sdk_elasticloadbalancing_dep = declare_dependency(
 )
 
 meson.override_dependency('aws-cpp-sdk-elasticloadbalancing', aws_cpp_sdk_elasticloadbalancing_dep)
+
+pkgs += {
+    'aws-cpp-sdk-elasticloadbalancing': {
+        'lib': libaws_cpp_sdk_elasticloadbalancing,
+        'extra_cflags': public_cpp_args,
+    }
+}

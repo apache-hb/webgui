@@ -260,8 +260,10 @@ aws_cpp_sdk_core_dep = declare_dependency(
 
 meson.override_dependency('aws-cpp-sdk-core', aws_cpp_sdk_core_dep)
 
-pkg.generate(
-    libaws_cpp_sdk_core,
-    extra_cflags: public_cpp_args,
-    description: 'Core http and utility library for the AWS C++ SDK',
-)
+pkgs += {
+    'aws-cpp-sdk-core': {
+        'lib': libaws_cpp_sdk_core,
+        'extra_cflags': public_cpp_args,
+        'description': 'Core http and utility library for the AWS C++ SDK',
+    }
+}

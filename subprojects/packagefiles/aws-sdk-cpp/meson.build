@@ -10,6 +10,8 @@ if (get_option('default_library') == 'shared' and host_machine.system() == 'wind
     public_cpp_args += ['-DUSE_IMPORT_EXPORT=1']
 endif
 
+pkgs = {}
+
 subdir('src/aws-cpp-sdk-core')
 
 subdir('generated/src/aws-cpp-sdk-account')
@@ -29,3 +31,11 @@ subdir('generated/src/aws-cpp-sdk-s3')
 subdir('generated/src/aws-cpp-sdk-sts')
 
 subdir('src/aws-cpp-sdk-identity-management')
+
+foreach name, pkg : pkgs
+    pkg.generate(
+        pkg['lib'],
+        extra_cflags: pkg['extra_cflags'],
+        description: pkg.get('description', 'AWS C++ SDK for ' + name),
+    )
+endforeach
