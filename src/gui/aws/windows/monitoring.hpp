@@ -40,6 +40,7 @@ namespace ImAws {
 
         sm::AsyncStream<GetMetricDataResult, CloudWatchError> mMetricDataFetch;
 
+        bool mAutoFit = false;
         std::string mMetricName = "Metric";
         std::vector<float> mPlotXData;
         std::vector<float> mPlotYData;

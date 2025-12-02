@@ -177,6 +177,15 @@ void ImAws::MonitoringPanel::draw() {
     mErrorPanel.draw();
 
     if (auto next = mMetricDataFetch.pullItem()) {
+        //
+        // Only auto-fit once on new data arrival, without this the plot
+        // would keep re-fitting everytime a new chunk of data arrives.
+        // I find that behavior incredibly annoying.
+        //
+        if (!mPlotXData.empty()) {
+            mAutoFit = true;
+        }
+
         for (const auto& result : next->GetMetricDataResults()) {
             if (result.GetId() == "metric") {
                 for (const auto& timestamp : result.GetTimestamps()) {
@@ -190,8 +199,14 @@ void ImAws::MonitoringPanel::draw() {
         }
     }
 
+    if (mAutoFit) {
+        ImPlot::SetNextAxisToFit(ImAxis_X1);
+        ImPlot::SetNextAxisToFit(ImAxis_Y1);
+        mAutoFit = false;
+    }
+
     if (ImPlot::BeginPlot("Plot")) {
-        ImPlotAxisFlags flags = ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit;
+        ImPlotAxisFlags flags = ImPlotAxisFlags_None; //ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_RangeFit;
         ImPlot::SetupAxes("Time", mMetricName.c_str(), flags, flags);
 
         if (!mPlotXData.empty() && !mPlotYData.empty()) {
