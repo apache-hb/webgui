@@ -423,7 +423,11 @@ libaws_cpp_sdk_s3 = library(
     src,
     include_directories: inc,
     cpp_args: cpp_args + public_cpp_args,
-    dependencies: [aws_cpp_sdk_core_dep],
+    dependencies: [
+        aws_cpp_sdk_core_dep,
+        dependency('threads'),
+        cpp.find_library('dl', required: false),
+    ],
     install: true,
     version: meson.project_version(),
 )

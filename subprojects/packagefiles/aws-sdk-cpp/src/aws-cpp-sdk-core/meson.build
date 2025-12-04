@@ -205,7 +205,12 @@ default_net_src = files(
     'source/net/Net.cpp',
 )
 
-deps = [aws_crt_cpp_dep]
+deps = [
+    aws_crt_cpp_dep,
+    dependency('threads'),
+    cpp.find_library('dl', required: false),
+]
+
 curl = dependency('libcurl', required: host_machine.system() in ['linux', 'android'])
 
 if host_machine.system() == 'windows' and get_option('default_library') == 'shared'

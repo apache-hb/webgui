@@ -110,7 +110,9 @@ class CreateSessionWindow {
     }
 
 public:
-    CreateSessionWindow() {
+    CreateSessionWindow() = default;
+
+    void init() {
         mPanels.emplace_back(sm::CreateSessionPanel_ForConfigFile());
         mPanels.emplace_back(sm::CreateSessionPanel_ForDefault());
     }
@@ -271,6 +273,7 @@ int main(int argc, char **argv) {
     Aws::InitAPI(options);
 
     {
+        gCreateSessionWindow.init();
         sm::Platform::run(loop);
     }
 

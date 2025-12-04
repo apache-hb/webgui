@@ -32,10 +32,10 @@ subdir('generated/src/aws-cpp-sdk-sts')
 
 subdir('src/aws-cpp-sdk-identity-management')
 
-foreach name, pkg : pkgs
+foreach name, config : pkgs
     pkg.generate(
-        pkg['lib'],
-        extra_cflags: pkg['extra_cflags'],
-        description: pkg.get('description', 'AWS C++ SDK for ' + name),
+        config['lib'],
+        extra_cflags: config['extra_cflags'],
+        description: config.get('description', 'AWS C++ SDK for ' + name),
     )
 endforeach
