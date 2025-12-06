@@ -1,0 +1,10 @@
+[wrap-file]
+directory = c4core-0.2.7
+source_url = https://github.com/biojppm/c4core/releases/download/v0.2.7/c4core-0.2.7-src.tgz
+source_filename = c4core-0.2.7.tar.gz
+source_hash = aa681af83bd2e02224cd05f89b815f5c090b8257420527a002b550ba45291f3e
+
+patch_directory = c4core
+
+[provide]
+dependency_names = c4core

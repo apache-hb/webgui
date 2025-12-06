@@ -1,0 +1,10 @@
+[wrap-file]
+directory = rapidyaml-0.10.0
+source_url = https://github.com/biojppm/rapidyaml/releases/download/v0.10.0/rapidyaml-0.10.0-src.tgz
+source_filename = rapidyaml-0.10.0.tar.gz
+source_hash = 812a5d798061bd5f2521d45be3a2b6ff590d0aa46834778ecb9b3e56d0db7c29
+
+patch_directory = rapidyaml
+
+[provide]
+dependency_names = rapidyaml

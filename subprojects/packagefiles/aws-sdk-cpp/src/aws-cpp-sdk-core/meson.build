@@ -142,7 +142,7 @@ src = files(
     'source/config/defaults/ClientConfigurationDefaults.cpp'
 )
 
-otel_src = files(
+optel_src = files(
     'source/smithy/tracing/impl/opentelemetry/MeterAdapters.cpp',
     'source/smithy/tracing/impl/opentelemetry/OtelMeterProvider.cpp',
     'source/smithy/tracing/impl/opentelemetry/TraceAdapters.cpp',
@@ -210,6 +210,14 @@ deps = [
     dependency('threads'),
     cpp.find_library('dl', required: false),
 ]
+
+optel_dep = dependency('opentelemetry-cpp', required: false)
+
+if optel_dep.found()
+    ostream_exporter_dep = dependency('opentelemetry-cpp-ostream-exporter')
+    src += optel_src
+    deps += [optel_dep, ostream_exporter_dep]
+endif
 
 curl = dependency('libcurl', required: host_machine.system() in ['linux', 'android'])
 

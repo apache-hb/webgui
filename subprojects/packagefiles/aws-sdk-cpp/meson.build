@@ -1,4 +1,12 @@
-project('aws-sdk-cpp', 'cpp', version: '0.13.3', license: 'Apache-2.0', meson_version: '>=0.63.0')
+project('aws-sdk-cpp', 'cpp',
+    version: '0.13.3',
+    license: 'Apache-2.0',
+    meson_version: '>=0.63.0',
+    default_options: [
+        'cpp_eh=none',
+        'cpp_rtti=false',
+    ]
+)
 
 pkg = import('pkgconfig')
 cpp = meson.get_compiler('cpp')
@@ -19,6 +27,7 @@ subdir('generated/src/aws-cpp-sdk-acm')
 subdir('generated/src/aws-cpp-sdk-cognito-identity')
 subdir('generated/src/aws-cpp-sdk-dynamodb')
 subdir('generated/src/aws-cpp-sdk-ec2')
+subdir('generated/src/aws-cpp-sdk-ec2-instance-connect')
 subdir('generated/src/aws-cpp-sdk-ecs')
 subdir('generated/src/aws-cpp-sdk-elasticloadbalancing')
 subdir('generated/src/aws-cpp-sdk-elasticloadbalancingv2')

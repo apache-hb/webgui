@@ -1,0 +1,10 @@
+[wrap-file]
+directory = duktape-2.7.0
+source_url = https://github.com/svaarala/duktape/archive/refs/tags/v2.7.0.tar.gz
+source_filename = duktape-2.7.0.tar.gz
+source_hash =
+
+patch_directory = duktape
+
+[provide]
+dependency_names = duktape

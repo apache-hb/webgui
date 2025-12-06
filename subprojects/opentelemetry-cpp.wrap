@@ -1,0 +1,12 @@
+[wrap-file]
+directory = opentelemetry-cpp-1.24.0
+source_url = https://github.com/open-telemetry/opentelemetry-cpp/archive/refs/tags/v1.24.0.tar.gz
+source_filename = opentelemetry-cpp-1.24.0.tar.gz
+source_hash = 7b8e966affca1daf1906272f4d983631cad85fb6ea60fb6f55dcd1811a730604
+
+patch_directory = opentelemetry-cpp
+
+[provide]
+dependency_names = opentelemetry-cpp-sdk, opentelemetry-cpp-exporter, \
+    opentelemetry-cpp-memory-exporter, opentelemetry-cpp-ostream-exporter, \
+    opentelemetry-cpp-prometheus-exporter

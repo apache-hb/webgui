@@ -1,0 +1,10 @@
+[wrap-file]
+directory = debugbreak-328e4abca3384cbd0a69e70f263cc7b2794bff09
+source_url = https://github.com/biojppm/debugbreak/archive/328e4abca3384cbd0a69e70f263cc7b2794bff09.tar.gz
+source_filename = debugbreak-328e4abca3384cbd0a69e70f263cc7b2794bff09.tar.gz
+source_hash = e90bc63f50e516af1a65991ffa0410fd2698fd0936041f387824b2114e72a549
+
+patch_directory = debugbreak
+
+[provide]
+dependency_names = debugbreak

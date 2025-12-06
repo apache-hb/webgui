@@ -1,9 +1,7 @@
 project('webgui', 'cpp',
     default_options: [
         'cpp_std=c++26,c++latest',
-        # Always force fallback so we get the latest version of aws-cpp-sdk
         'wrap_mode=forcefallback',
-        'cpp_eh=none',
         'cpp_rtti=false',
     ],
 )
@@ -39,6 +37,9 @@ aws_cpp_sdk_monitoring = dependency('aws-cpp-sdk-monitoring')
 libcrypto = dependency('libcrypto')
 concurrentqueue = dependency('concurrentqueue')
 sqlite3_dep = dependency('sqlite3')
+civetweb_dep = dependency('civetweb')
+prometheus_dep = dependency('prometheus-cpp-pull')
+otel_dep = dependency('opentelemetry-cpp')
 
 inc = include_directories('src')
 
