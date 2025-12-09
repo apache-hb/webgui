@@ -58,7 +58,7 @@ src = files(
     'source/model/CreateIdentityPoolRequest.cpp',
     'source/model/TagResourceResult.cpp',
     'source/model/UpdateIdentityPoolResult.cpp',
-    'source/model/DeleteIdentitiesRequest.cpp'
+    'source/model/DeleteIdentitiesRequest.cpp',
 )
 
 inc = include_directories('include')
@@ -73,7 +73,7 @@ libaws_cpp_sdk_cognito_identity = library(
     'aws-cpp-sdk-cognito-identity',
     src,
     include_directories: inc,
-    cpp_args: cpp_args,
+    cpp_args: cpp_args + public_cpp_args,
     dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
@@ -83,6 +83,7 @@ aws_cpp_sdk_cognito_identity_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_sdk_cognito_identity,
     dependencies: [aws_cpp_sdk_core_dep],
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-cpp-sdk-cognito-identity', aws_cpp_sdk_cognito_identity_dep)

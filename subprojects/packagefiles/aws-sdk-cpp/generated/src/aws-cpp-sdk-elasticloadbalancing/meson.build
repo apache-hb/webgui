@@ -89,7 +89,7 @@ src = files(
     'source/model/Tag.cpp',
     'source/model/CreateLoadBalancerListenersRequest.cpp',
     'source/model/DeleteLoadBalancerListenersResult.cpp',
-    'source/model/PolicyTypeDescription.cpp'
+    'source/model/PolicyTypeDescription.cpp',
 )
 
 inc = include_directories('include')

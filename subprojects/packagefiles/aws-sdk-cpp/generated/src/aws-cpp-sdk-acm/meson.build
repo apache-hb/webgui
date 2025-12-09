@@ -59,7 +59,7 @@ src = files(
     'source/model/ImportCertificateResult.cpp',
     'source/model/RequestCertificateRequest.cpp',
     'source/model/Tag.cpp',
-    'source/model/ExportCertificateResult.cpp'
+    'source/model/ExportCertificateResult.cpp',
 )
 
 inc = include_directories('include')
@@ -74,7 +74,7 @@ libaws_cpp_sdk_acm = library(
     'aws-cpp-sdk-acm',
     src,
     include_directories: inc,
-    cpp_args: cpp_args,
+    cpp_args: cpp_args + public_cpp_args,
     dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
@@ -84,6 +84,7 @@ aws_cpp_sdk_acm_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_sdk_acm,
     dependencies: [aws_cpp_sdk_core_dep],
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-cpp-sdk-acm', aws_cpp_sdk_acm_dep)

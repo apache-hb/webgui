@@ -89,6 +89,7 @@ src = files(
     'source/model/ModifyLoadBalancerAttributesRequest.cpp',
     'source/model/ModifyIpPoolsResult.cpp',
     'source/model/DescribeTagsResult.cpp',
+    'source/model/JwtValidationActionConfig.cpp',
     'source/model/SetIpAddressTypeResult.cpp',
     'source/model/DescribeRulesRequest.cpp',
     'source/model/GetResourcePolicyResult.cpp',
@@ -107,6 +108,7 @@ src = files(
     'source/model/CreateTargetGroupResult.cpp',
     'source/model/QueryStringKeyValuePair.cpp',
     'source/model/RevocationContent.cpp',
+    'source/model/JwtValidationActionAdditionalClaimFormatEnum.cpp',
     'source/model/DescribeTrustStoreRevocationsResult.cpp',
     'source/model/DeleteSharedTrustStoreAssociationRequest.cpp',
     'source/model/DeleteSharedTrustStoreAssociationResult.cpp',
@@ -158,6 +160,7 @@ src = files(
     'source/model/DeregisterTargetsRequest.cpp',
     'source/model/DescribeTargetGroupAttributesRequest.cpp',
     'source/model/AvailabilityZone.cpp',
+    'source/model/JwtValidationActionAdditionalClaim.cpp',
     'source/model/DescribeLoadBalancerAttributesRequest.cpp',
     'source/model/MinimumLoadBalancerCapacity.cpp',
     'source/model/MutualAuthenticationAttributes.cpp',
@@ -188,7 +191,7 @@ src = files(
     'source/model/ModifyTargetGroupAttributesRequest.cpp',
     'source/model/DescribeListenerCertificatesRequest.cpp',
     'source/model/Cipher.cpp',
-    'source/model/FixedResponseActionConfig.cpp'
+    'source/model/FixedResponseActionConfig.cpp',
 )
 
 inc = include_directories('include')

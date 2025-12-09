@@ -137,7 +137,7 @@ src = files(
     'source/model/DisableKeyRequest.cpp',
     'source/model/GenerateDataKeyResult.cpp',
     'source/model/Tag.cpp',
-    'source/model/GetPublicKeyResult.cpp'
+    'source/model/GetPublicKeyResult.cpp',
 )
 
 inc = include_directories('include')

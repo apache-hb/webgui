@@ -130,7 +130,7 @@ src = files(
     'source/model/DescribeAlarmContributorsRequest.cpp',
     'source/model/EntityMetricData.cpp',
     'source/model/EvaluationState.cpp',
-    'source/model/DashboardInvalidInputError.cpp'
+    'source/model/DashboardInvalidInputError.cpp',
 )
 
 inc = include_directories('include')

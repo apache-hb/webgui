@@ -1,8 +1,8 @@
 [wrap-file]
-directory = aws-crt-cpp-0.35.2
-source_url = https://github.com/awslabs/aws-crt-cpp/archive/refs/tags/v0.35.2.tar.gz
-source_filename = aws-crt-cpp-0.35.2.tar.gz
-source_hash = 9d53d7018994a5f7fc879d397032b72ad88b1585a8cc07e2c8c339ae427f0577
+directory = aws-crt-cpp-0.35.4
+source_url = https://github.com/awslabs/aws-crt-cpp/archive/refs/tags/v0.35.4.tar.gz
+source_filename = aws-crt-cpp-0.35.4.tar.gz
+source_hash = 3deb29f816498259aa289930afdb5f37d95bba991ec224952f57f931d877e81d
 
 patch_directory = aws-crt-cpp
 

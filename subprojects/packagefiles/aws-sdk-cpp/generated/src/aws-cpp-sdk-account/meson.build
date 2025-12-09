@@ -40,7 +40,7 @@ src = files(
     'source/model/ValidationException.cpp',
     'source/model/InternalServerException.cpp',
     'source/model/GetRegionOptStatusResult.cpp',
-    'source/model/GetContactInformationRequest.cpp'
+    'source/model/GetContactInformationRequest.cpp',
 )
 
 inc = include_directories('include')
@@ -55,7 +55,7 @@ libaws_cpp_sdk_account = library(
     'aws-cpp-sdk-account',
     src,
     include_directories: inc,
-    cpp_args: cpp_args,
+    cpp_args: cpp_args + public_cpp_args,
     dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
@@ -65,6 +65,7 @@ aws_cpp_sdk_account_dep = declare_dependency(
     include_directories: inc,
     link_with: libaws_cpp_sdk_account,
     dependencies: [aws_cpp_sdk_core_dep],
+    compile_args: public_cpp_args,
 )
 
 meson.override_dependency('aws-cpp-sdk-account', aws_cpp_sdk_account_dep)

@@ -30,6 +30,7 @@ src = files(
     'source/model/GeoLocationDetails.cpp',
     'source/model/CreateCidrCollectionRequest.cpp',
     'source/model/AccountLimit.cpp',
+    'source/model/UpdateHostedZoneFeaturesResult.cpp',
     'source/model/CreateQueryLoggingConfigRequest.cpp',
     'source/model/CollectionSummary.cpp',
     'source/model/DeleteHealthCheckRequest.cpp',
@@ -55,6 +56,7 @@ src = files(
     'source/model/ActivateKeySigningKeyRequest.cpp',
     'source/model/ResourceRecordSetRegion.cpp',
     'source/model/DeleteReusableDelegationSetResult.cpp',
+    'source/model/AcceleratedRecoveryStatus.cpp',
     'source/model/DeactivateKeySigningKeyRequest.cpp',
     'source/model/TrafficPolicySummary.cpp',
     'source/model/DeleteCidrCollectionRequest.cpp',
@@ -62,6 +64,7 @@ src = files(
     'source/model/GetDNSSECResult.cpp',
     'source/model/DisassociateVPCFromHostedZoneRequest.cpp',
     'source/model/GetHealthCheckRequest.cpp',
+    'source/model/HostedZoneFailureReasons.cpp',
     'source/model/HealthCheckConfig.cpp',
     'source/model/GetQueryLoggingConfigRequest.cpp',
     'source/model/ListTrafficPolicyVersionsResult.cpp',
@@ -77,6 +80,7 @@ src = files(
     'source/model/ActivateKeySigningKeyResult.cpp',
     'source/model/DelegationSet.cpp',
     'source/model/ListTrafficPolicyInstancesByPolicyRequest.cpp',
+    'source/model/UpdateHostedZoneFeaturesRequest.cpp',
     'source/model/GetQueryLoggingConfigResult.cpp',
     'source/model/CidrCollection.cpp',
     'source/model/DeleteTrafficPolicyResult.cpp',
@@ -148,6 +152,7 @@ src = files(
     'source/model/UpdateHostedZoneCommentRequest.cpp',
     'source/model/CreateTrafficPolicyVersionRequest.cpp',
     'source/model/GetReusableDelegationSetRequest.cpp',
+    'source/model/HostedZoneFeatures.cpp',
     'source/model/CreateHostedZoneRequest.cpp',
     'source/model/GetHostedZoneRequest.cpp',
     'source/model/UpdateTrafficPolicyInstanceResult.cpp',
@@ -205,7 +210,7 @@ src = files(
     'source/model/CloudWatchAlarmConfiguration.cpp',
     'source/model/Change.cpp',
     'source/model/GetTrafficPolicyInstanceResult.cpp',
-    'source/model/GetGeoLocationResult.cpp'
+    'source/model/GetGeoLocationResult.cpp',
 )
 
 inc = include_directories('include')

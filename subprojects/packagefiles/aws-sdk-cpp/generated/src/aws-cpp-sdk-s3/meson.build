@@ -55,6 +55,7 @@ src = files(
     'source/model/TargetObjectKeyFormat.cpp',
     'source/model/DeleteMarkerReplicationStatus.cpp',
     'source/model/DeleteBucketRequest.cpp',
+    'source/model/AbacStatus.cpp',
     'source/model/MetadataConfigurationResult.cpp',
     'source/model/DeleteBucketMetadataTableConfigurationRequest.cpp',
     'source/model/AnalyticsExportDestination.cpp',
@@ -66,6 +67,7 @@ src = files(
     'source/model/InventoryFilter.cpp',
     'source/model/GetBucketLocationResult.cpp',
     'source/model/GetBucketEncryptionResult.cpp',
+    'source/model/BucketAbacStatus.cpp',
     'source/model/GetObjectRetentionRequest.cpp',
     'source/model/GetPublicAccessBlockRequest.cpp',
     'source/model/InventoryFormat.cpp',
@@ -125,6 +127,7 @@ src = files(
     'source/model/DeleteBucketPolicyRequest.cpp',
     'source/model/CloudFunctionConfiguration.cpp',
     'source/model/InventoryTableConfiguration.cpp',
+    'source/model/EncryptionType.cpp',
     'source/model/S3TablesDestination.cpp',
     'source/model/ObjectVersion.cpp',
     'source/model/Metrics.cpp',
@@ -212,6 +215,7 @@ src = files(
     'source/model/SSES3.cpp',
     'source/model/CreateMultipartUploadResult.cpp',
     'source/model/CreateBucketRequest.cpp',
+    'source/model/PutBucketAbacRequest.cpp',
     'source/model/ExpirationState.cpp',
     'source/model/GetObjectResult.cpp',
     'source/model/FileHeaderInfo.cpp',
@@ -311,6 +315,7 @@ src = files(
     'source/model/ObjectCannedACL.cpp',
     'source/model/LifecycleRuleFilter.cpp',
     'source/model/IntelligentTieringAndOperator.cpp',
+    'source/model/GetBucketAbacRequest.cpp',
     'source/model/TopicConfiguration.cpp',
     'source/model/ObjectStorageClass.cpp',
     'source/model/GetBucketVersioningResult.cpp',
@@ -321,6 +326,7 @@ src = files(
     'source/model/GetBucketAccelerateConfigurationRequest.cpp',
     'source/model/ChecksumAlgorithm.cpp',
     'source/model/DeleteBucketCorsRequest.cpp',
+    'source/model/GetBucketAbacResult.cpp',
     'source/model/ErrorDocument.cpp',
     'source/model/TargetGrant.cpp',
     'source/model/BucketCannedACL.cpp',
@@ -377,6 +383,7 @@ src = files(
     'source/model/GetBucketIntelligentTieringConfigurationRequest.cpp',
     'source/model/JournalTableConfiguration.cpp',
     'source/model/RequestPaymentConfiguration.cpp',
+    'source/model/BlockedEncryptionTypes.cpp',
     'source/model/GlacierJobParameters.cpp',
     'source/model/PutBucketAnalyticsConfigurationRequest.cpp',
     'source/model/ListDirectoryBucketsResult.cpp',
@@ -407,7 +414,7 @@ src = files(
     'source/model/CopyObjectResult.cpp',
     'source/model/PublicAccessBlockConfiguration.cpp',
     'source/model/GetBucketVersioningRequest.cpp',
-    'source/model/ObjectLockMode.cpp'
+    'source/model/ObjectLockMode.cpp',
 )
 
 inc = include_directories('include')
@@ -423,11 +430,7 @@ libaws_cpp_sdk_s3 = library(
     src,
     include_directories: inc,
     cpp_args: cpp_args + public_cpp_args,
-    dependencies: [
-        aws_cpp_sdk_core_dep,
-        dependency('threads'),
-        cpp.find_library('dl', required: false),
-    ],
+    dependencies: [aws_cpp_sdk_core_dep],
     install: true,
     version: meson.project_version(),
 )

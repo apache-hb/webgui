@@ -12,6 +12,7 @@ src = files(
     'source/model/AssumeRoleWithWebIdentityResult.cpp',
     'source/model/AssumeRoleWithSAMLRequest.cpp',
     'source/model/AssumedRoleUser.cpp',
+    'source/model/GetWebIdentityTokenRequest.cpp',
     'source/model/ResponseMetadata.cpp',
     'source/model/ProvidedContext.cpp',
     'source/model/AssumeRoleWithSAMLResult.cpp',
@@ -30,8 +31,9 @@ src = files(
     'source/model/GetSessionTokenRequest.cpp',
     'source/model/AssumeRootRequest.cpp',
     'source/model/GetSessionTokenResult.cpp',
+    'source/model/GetWebIdentityTokenResult.cpp',
     'source/model/Tag.cpp',
-    'source/model/GetAccessKeyInfoResult.cpp'
+    'source/model/GetAccessKeyInfoResult.cpp',
 )
 
 inc = include_directories('include')

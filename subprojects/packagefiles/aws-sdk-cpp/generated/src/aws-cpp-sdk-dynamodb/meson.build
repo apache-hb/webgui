@@ -279,7 +279,7 @@ src = files(
     'source/model/DescribeContinuousBackupsResult.cpp',
     'source/model/ConditionalCheckFailedException.cpp',
     'source/model/ListTagsOfResourceRequest.cpp',
-    'source/model/WarmThroughput.cpp'
+    'source/model/WarmThroughput.cpp',
 )
 
 inc = include_directories('include')
