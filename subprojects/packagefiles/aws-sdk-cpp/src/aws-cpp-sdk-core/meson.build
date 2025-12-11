@@ -264,6 +264,7 @@ libaws_cpp_sdk_core = library(
     dependencies: deps,
     install: true,
     version: meson.project_version(),
+    override_options: [ 'unity=off' ],
 )
 
 aws_cpp_sdk_core_dep = declare_dependency(

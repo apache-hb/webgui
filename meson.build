@@ -1,8 +1,10 @@
 project('webgui', 'cpp',
+    version: '0.1.0',
     default_options: [
         'cpp_std=c++26,c++latest',
         'wrap_mode=forcefallback',
         'cpp_rtti=false',
+        'aws-sdk-cpp:unity=on',
     ],
 )
 
@@ -42,6 +44,20 @@ prometheus_dep = dependency('prometheus-cpp-pull')
 otel_dep = dependency('opentelemetry-cpp')
 
 inc = include_directories('src')
+
+version = meson.project_version()
+parts = version.split('.')
+cdata = configuration_data()
+cdata.set_quoted('PROJECT_NAME', meson.project_name())
+cdata.set_quoted('PROJECT_VERSION', meson.project_version())
+cdata.set_quoted('PROJECT_VERSION_MAJOR', parts[0])
+cdata.set_quoted('PROJECT_VERSION_MINOR', parts[1])
+cdata.set_quoted('PROJECT_VERSION_PATCH', parts[2])
+
+config = configure_file(
+    output: 'gui_config.hpp',
+    configuration: cdata,
+)
 
 src = files(
     'src/main.cpp',
@@ -110,7 +126,7 @@ elif host_machine.system() == 'linux'
     deps += [dependency('gl')]
 endif
 
-executable('gui', src,
+executable('gui', src, config,
     link_args: link_args,
     include_directories: inc,
     cpp_args: cpp_args,

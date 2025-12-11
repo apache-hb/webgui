@@ -33,6 +33,12 @@
 #include <aws/iam/model/ListRolesRequest.h>
 #include <aws/iam/model/ListPoliciesRequest.h>
 
+#include <gui_config.hpp>
+#include <sqlite3.h>
+#include <s2n.h>
+
+#include <openssl/opensslconf.h>
+
 using Aws::Client::ClientConfigurationInitValues;
 using Aws::STS::Model::GetCallerIdentityOutcome;
 using Aws::STS::Model::GetCallerIdentityResult;
@@ -177,7 +183,7 @@ void loop() {
     ImGui::DockSpaceOverViewport();
 
     if (ImGui::BeginMainMenuBar()) {
-        ImGui::TextUnformatted("AWS C++ WASM Example");
+        ImGui::TextUnformatted(PROJECT_NAME);
         ImGui::Separator();
 
         if (ImGui::BeginMenu("Sessions")) {
@@ -229,7 +235,23 @@ void loop() {
     }
 
     if (gShowAwsSdkInfoWindow) {
-        if (auto _ = ImAws::Begin("AWS SDK Info", &gShowAwsSdkInfoWindow)) {
+        if (auto _ = ImAws::Begin("Version Info", &gShowAwsSdkInfoWindow)) {
+            ImGui::SeparatorText("Application");
+            ImGui::Text("Name: %s", PROJECT_NAME);
+            ImGui::Text("Version: %s", PROJECT_VERSION);
+
+            ImGui::SeparatorText("sqlite3");
+            ImGui::Text("Version: %s", sqlite3_libversion());
+
+            ImGui::SeparatorText("ImGui");
+            ImGui::Text("ImGui Version: %s", IMGUI_VERSION);
+            ImGui::Text("ImPlot Version: %s", IMPLOT_VERSION);
+            ImGui::Text("ImPlot3D Version: %s", IMPLOT3D_VERSION);
+
+            ImGui::SeparatorText("OpenSSL");
+            ImGui::Text("Version: %s", OPENSSL_FULL_VERSION_STR);
+
+            ImGui::SeparatorText("AWS C++ SDK");
             ImGui::Text("AWS SDK Version: %s", Aws::Version::GetVersionString());
             ImGui::Text("Compiler: %s", Aws::Version::GetCompilerVersionString());
             ImGui::Text("C++ Standard: %s", Aws::Version::GetCPPStandard());
@@ -257,7 +279,7 @@ void loop() {
 
 int main(int argc, char **argv) {
     sm::PlatformCreateInfo createInfo {
-        .title = "AWS C++ WASM",
+        .title = PROJECT_NAME,
         .clear = {0.45f, 0.55f, 0.60f, 1.00f}
     };
 

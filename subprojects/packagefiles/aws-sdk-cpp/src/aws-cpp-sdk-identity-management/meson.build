@@ -21,6 +21,7 @@ libaws_cpp_sdk_identity_management = library(
     dependencies: [aws_cpp_sdk_core_dep, aws_cpp_sdk_cognito_identity_dep, aws_cpp_sdk_sts_dep],
     install: true,
     version: meson.project_version(),
+    override_options: [ 'unity=off' ],
 )
 
 aws_cpp_sdk_identity_management_dep = declare_dependency(
